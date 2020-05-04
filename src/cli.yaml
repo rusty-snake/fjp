@@ -1,0 +1,107 @@
+# Copyright © 2020 rusty-snake
+#
+# This file is part of firejail-profile
+#
+# firejail-profile is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# firejail-profile is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program. If not, see <https://www.gnu.org/licenses/>.
+
+name: fjp
+settings:
+  - SubcommandRequiredElseHelp
+global_settings:
+  - ColoredHelp
+  - VersionlessSubcommands
+subcommands:
+  - cat:
+      about: Show a profile, its .local and its redirect profile
+      args:
+        - no-globals:
+            long: no-globals
+            help: Do not show globals.local.
+        - no-locals:
+            long: no-locals
+            help: Do not show .local files.
+        - no-pager:
+            long: no-pager
+            help: Do not pipe output into a pager.
+            long_help: Do not pipe output into a pager. (Actually the output is always without a pager).
+        - no-redirects:
+            long: no-redirects
+            help: Do not show redirect profiles.
+        - PROFILE_NAME:
+            index: 1
+            required: true
+            help: The name of the profile to show.
+  - disable:
+      about: Disable profiles
+      args:
+        - list:
+            long: list
+            conflicts_with: user
+            help: List all disabled profiles
+        - user:
+            long: user
+            conflicts_with: list
+            help: Disable ~/.config/firejail
+            long_help: Disable ~/.config/firejail by renaming it to firejail.disabled
+        - PROFILE_NAME:
+            index: 1
+            required_unless_one: [list, user]
+            help: The name of the profile to disable
+  - edit:
+      about: Edit profiles
+      args:
+        - no-copy:
+            long: no-copy
+            help: Do not copy the profile
+            long_help: Do not copy the profile form system to user if it only exits in the system locations.
+        - no-create:
+            long: no-create
+            help: Open only if exits
+            long_help: >
+              Open the editor only if the profile exists in the user location.
+              NOTE: Without --no-copy it is copied first.
+        - tmp:
+            long: tmp
+            help: Edit non-persistent
+        - PROFILE_NAME:
+            index: 1
+            required: true
+            help: The name of the profile to edit.
+            long_help: >
+              The name of the profile to edit. If the profile does not exists,
+              it is create except it is found in /etc/firejail, then it is copied from there.
+  - enable:
+      about: Enable profiles
+      args:
+        - user:
+            long: user
+            help: Enable ~/.config/firejail
+        - PROFILE_NAME:
+            index: 1
+            required_unless: user
+            help: The name of the profile to enable
+  - has:
+      about: Look if a profile exists
+      args:
+        - PROFILE_NAME:
+            index: 1
+            required: true
+            help: The name of the program to look for a profile.
+  - rm:
+      about: Remove profiles
+      args:
+        - PROFILE_NAMES:
+            multiple: true
+            required: true
+            help: The names of the profiles to delete.

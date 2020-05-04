@@ -1,0 +1,6 @@
+/target
+/config.status
+/man/fjp.man
+/man/fjp.1.gz
+
+*.swp

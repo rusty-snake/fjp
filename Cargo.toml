@@ -1,0 +1,38 @@
+[package]
+name = "fjp"
+version = "0.1.0"
+description = "A commandline program to deal with firejail profiles."
+authors = ["rusty-snake"]
+edition = "2018"
+readme = "README.md"
+repository = "https://github.com/rusty-snake/fjp"
+license = "GPL-3.0-or-later"
+build = "build.rs"
+categories = ["command-line-utilities"]
+keywords = ["firejail"]
+
+[features]
+default = []
+full = ["color-backtrace"]
+
+[dependencies]
+lazy_static = "1"
+log = "0.4"
+env_logger = "0.7"
+bitflags = "1.2"
+ansi_term = "0.12"
+
+[dependencies.clap]
+version = "2"
+features = [ "yaml", "wrap_help" ]
+
+[dependencies.which]
+version = "3.1.1"
+default-features = false
+
+[dependencies.color-backtrace]
+version = "0.3"
+optional = true
+
+[build-dependencies]
+clap = { version = "2", default-features = false, features = [ "yaml" ] }

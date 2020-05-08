@@ -14,5 +14,5 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
-    - run: shellchecl --version
+    - run: shellcheck --version
     - run: shellcheck make.sh

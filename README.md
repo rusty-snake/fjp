@@ -1,5 +1,5 @@
-fjp
-===
+firejail-profile
+================
 
 ![GPL-3.0-or-later](https://img.shields.io/github/license/rusty-snake/fjp.svg?color=darkred&logo=gnu)
 ![actively-developed](https://badgen.net/badge/maintenance/actively-developed/00D000)
@@ -72,7 +72,7 @@ persinstent, add `EDITOR=nano` to you `.bashrc`.
 
 **3. How can I change the log level?**
 
-Set the environment-variable `RUST_LOG` to `trace`, `debug`, `info` (default), `warn` or `error`.
+Set the environment-variable `RUST_LOG` to `trace`, `debug`, `info` (default), `warn` or `error`.  
 Example: `$ RUST_LOG=debug fjp …`
 
 Changelog

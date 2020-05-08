@@ -1,0 +1,37 @@
+name: Rust
+
+on:
+  push:
+    paths:
+      - src/*
+      - Cargo.lock
+      - Cargo.toml
+      - build.rs
+  pull_request:
+    branches: [master]
+    paths:
+      - src/*
+      - Cargo.lock
+      - Cargo.toml
+      - build.rs
+
+jobs:
+  check:
+    name: Rust ${{ matrix.rust }}
+    runs-on: ubuntu-18.04
+    strategy:
+      matrix:
+        rust: [1.41.0, stable, beta]
+    steps:
+    - uses: actions/checkout@v2
+    - name: Install minimal ${{ matrix.rust }} rust
+      uses: actions-rs/toolchain@b2417cd
+      with:
+        override: true
+        profile: minimal
+        toolchain: ${{ matrix.rust }}
+    - run: cargo -Vv && rustc -Vv
+    - run: cargo check
+    - run: cargo check --all-features
+    - run: cargo test
+      if: ${{ matrix.rust == 'stable' }}

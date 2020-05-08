@@ -124,7 +124,7 @@ case $ACTION in
     sudo ./make.sh install
   ;;
   build)
-    COMMIT=$(git describe | cut -s -d- -f3)
+    COMMIT=$(git describe --dirty | cut -s -d- -f3-4 | sed "s/g//")
     export COMMIT
     cargo build "${CARGO_ARGS[@]}"
     ./man/mkman.sh
@@ -168,4 +168,3 @@ case $ACTION in
       "$DESTDIR"/share/man/man1/fjp.1.gz
   ;;
 esac
-

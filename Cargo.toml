@@ -26,10 +26,6 @@ termcolor = "1.1"
 version = "2"
 features = [ "yaml", "wrap_help" ]
 
-[dependencies.which]
-version = "3.1.1"
-default-features = false
-
 [dependencies.color-backtrace]
 version = "0.3"
 optional = true

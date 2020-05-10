@@ -19,8 +19,10 @@
 
 use log::debug;
 use std::env;
+use std::error;
 use std::ffi;
 use std::fmt;
+use std::fs;
 use std::io;
 use std::io::prelude::*;
 use std::path;
@@ -112,6 +114,46 @@ pub fn home_dir() -> Option<path::PathBuf> {
     env::var_os("HOME")
         .and_then(|h| if h.is_empty() { None } else { Some(h) })
         .map(path::PathBuf::from)
+}
+
+//
+// which
+//
+
+pub fn which<T: AsRef<ffi::OsStr>>(bin: T) -> Result<path::PathBuf, Box<dyn error::Error>> {
+    use env::{split_paths, var_os};
+    use fs::read_dir;
+
+    let paths = if let Some(paths) = var_os("PATH").filter(|s| !s.is_empty()) {
+        paths
+    } else {
+        return Err(Box::new(WhichError::PathNotSet));
+    };
+
+    for path in split_paths(&paths) {
+        for entry in read_dir(path)? {
+            let entry = entry?;
+            if entry.file_name() == bin.as_ref() {
+                return Ok(entry.path());
+            }
+        }
+    }
+    Err(Box::new(WhichError::NotFound))
+}
+
+#[derive(Clone, Copy, Debug, PartialEq)]
+enum WhichError {
+    NotFound,
+    PathNotSet,
+}
+impl error::Error for WhichError {}
+impl fmt::Display for WhichError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::NotFound => write!(f, "The binary could not be found in $PATH."),
+            Self::PathNotSet => write!(f, "$PATH is not set or empty."),
+        }
+    }
 }
 
 //

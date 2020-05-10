@@ -21,17 +21,15 @@
 
 use crate::{
     fatal, profile_path,
-    utils::{get_name1, PushExtension},
+    utils::{get_name1, which, PushExtension},
 };
 use bitflags::bitflags;
 use clap::ArgMatches;
 use log::{debug, error, info, warn};
 use std::env::var_os;
-use std::ffi::OsString;
 use std::fs::{copy as copy_file, remove_file, rename};
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::process::Command;
-use which::which;
 
 bitflags! {
     struct Flags: u8 {
@@ -103,12 +101,10 @@ fn prepare_edit(user_profile: &Path, system_profile: &Path, flags: Flags) {
 }
 
 fn open_user_profile(profile: &Path) {
-    let editor = var_os("EDITOR").map_or(OsString::from("/usr/bin/vim"), |ed| {
-        which(&ed)
-            .unwrap_or_else(|err| {
-                fatal!("Could not find editor '{}': {}", ed.to_string_lossy(), err)
-            })
-            .into_os_string()
+    let editor = var_os("EDITOR").map_or(PathBuf::from("/usr/bin/vim"), |ed| {
+        which(&ed).unwrap_or_else(|err| {
+            fatal!("Could not find editor '{}': {}", ed.to_string_lossy(), err)
+        })
     });
     debug!("editor: {}", editor.to_string_lossy());
 

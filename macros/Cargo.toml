@@ -1,0 +1,14 @@
+[package]
+name = "macros"
+version = "0.1.0"
+authors = ["rusty-snake"]
+edition = "2018"
+description = "Procedural Macros for firejail-profile"
+
+[lib]
+proc-macro = true
+
+[dependencies]
+syn = "1"
+quote = "1"
+proc-macro2 = "1"

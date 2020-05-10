@@ -17,7 +17,7 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-use clap::{crate_description, crate_version, load_yaml, App};
+use clap::{crate_description, load_yaml, App};
 use env_logger::{Builder, Env};
 use lazy_static::lazy_static;
 
@@ -52,6 +52,8 @@ lazy_static! {
     };
 }
 
+macros::fjp_version!();
+
 fn main() {
     #[cfg(feature = "full")]
     color_backtrace::install();
@@ -63,15 +65,7 @@ fn main() {
     let yaml = load_yaml!("cli.yaml");
     let matches = App::from_yaml(yaml)
         .about(crate_description!())
-        .version(&*if let Some(fjp_version) = option_env!("COMMIT") {
-            if fjp_version.is_empty() {
-                crate_version!().to_string()
-            } else {
-                crate_version!().to_string() + "-" + fjp_version
-            }
-        } else {
-            crate_version!().to_string()
-        })
+        .version(FJP_VERSION)
         .get_matches();
     match matches.subcommand() {
         ("cat", Some(sub_matches)) => start_cat(sub_matches),

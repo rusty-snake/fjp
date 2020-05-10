@@ -30,5 +30,8 @@ features = [ "yaml", "wrap_help" ]
 version = "0.3"
 optional = true
 
+[dependencies.macros]
+path = "macros"
+
 [build-dependencies]
 clap = { version = "2", default-features = false, features = [ "yaml" ] }

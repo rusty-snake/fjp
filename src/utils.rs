@@ -111,9 +111,12 @@ pub fn get_name1(raw: &str) -> String {
 }
 
 pub fn home_dir() -> Option<path::PathBuf> {
-    env::var_os("HOME")
+    use env::var_os;
+    use path::PathBuf;
+
+    var_os("HOME")
         .and_then(|h| if h.is_empty() { None } else { Some(h) })
-        .map(path::PathBuf::from)
+        .map(PathBuf::from)
 }
 
 //

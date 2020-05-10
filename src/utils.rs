@@ -20,6 +20,7 @@
 use log::debug;
 use std::env;
 use std::ffi;
+use std::fmt;
 use std::io;
 use std::io::prelude::*;
 use std::path;
@@ -111,6 +112,36 @@ pub fn home_dir() -> Option<path::PathBuf> {
     env::var_os("HOME")
         .and_then(|h| if h.is_empty() { None } else { Some(h) })
         .map(path::PathBuf::from)
+}
+
+//
+// ColoredText
+//
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct ColoredText {
+    inner: String,
+}
+impl ColoredText {
+    pub fn new(color: termcolor::Color, text: &str) -> Self {
+        use termcolor::{Buffer, ColorSpec, WriteColor};
+
+        let mut buffer = Buffer::ansi();
+        buffer
+            .set_color(ColorSpec::new().set_fg(Some(color)))
+            .unwrap();
+        buffer.write_all(text.as_bytes()).unwrap();
+        buffer.reset().unwrap();
+
+        Self {
+            inner: String::from_utf8_lossy(buffer.as_slice()).into_owned(),
+        }
+    }
+}
+impl fmt::Display for ColoredText {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        fmt::Display::fmt(&self.inner, f)
+    }
 }
 
 pub trait AddTo<T> {

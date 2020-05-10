@@ -17,10 +17,10 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-use crate::utils::{find_profile, get_name1};
-use ansi_term::Color::Green;
+use crate::utils::{find_profile, get_name1, ColoredText};
 use clap::ArgMatches;
 use log::debug;
+use termcolor::Color;
 
 pub fn start(cli: &ArgMatches<'_>) {
     debug!("subcommand: has");
@@ -31,7 +31,7 @@ pub fn start(cli: &ArgMatches<'_>) {
         println!(
             "Found profile for {} at {}.",
             profile_name,
-            Green.paint(profile.to_string_lossy())
+            ColoredText::new(Color::Green, &profile.to_string_lossy())
         );
     } else {
         println!("Cloud not find a profile for {}.", profile_name);

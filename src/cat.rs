@@ -19,13 +19,13 @@
 
 use crate::{
     fatal,
-    utils::{find_profile, get_name1},
+    utils::{find_profile, get_name1, ColoredText},
 };
-use ansi_term::Color::Blue;
 use clap::ArgMatches;
 use log::{debug, error, warn};
 use std::fs::read_to_string;
 use std::path::PathBuf;
+use termcolor::Color;
 
 static mut RECUSION_DEPTH: i32 = 0;
 
@@ -117,8 +117,10 @@ fn parse(data: &str) -> [Option<Vec<String>>; 2] {
 fn show_file(profile: &Profile) {
     println!(
         "{}",
-        Blue.bold()
-            .paint(format!("# {}:", profile.path.to_string_lossy()))
+        ColoredText::new(
+            Color::Blue,
+            &format!("# {}:", profile.path.to_string_lossy())
+        )
     );
     print!("{}", profile.data);
 }

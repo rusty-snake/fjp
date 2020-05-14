@@ -33,6 +33,7 @@ mod disable;
 mod edit;
 mod enable;
 mod has;
+mod list;
 mod rm;
 
 use cat::start as start_cat;
@@ -40,6 +41,7 @@ use disable::start as start_disable;
 use edit::start as start_edit;
 use enable::start as start_enable;
 use has::start as start_has;
+use list::start as start_list;
 use rm::start as start_rm;
 
 lazy_static! {
@@ -73,6 +75,7 @@ fn main() {
         ("edit", Some(sub_matches)) => start_edit(sub_matches),
         ("enable", Some(sub_matches)) => start_enable(sub_matches),
         ("has", Some(sub_matches)) => start_has(sub_matches),
+        ("list", Some(sub_matches)) => start_list(sub_matches),
         ("rm", Some(sub_matches)) => start_rm(sub_matches),
         _ => unreachable!(),
     }

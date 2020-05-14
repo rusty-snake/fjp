@@ -98,6 +98,8 @@ subcommands:
             index: 1
             required: true
             help: The name of the program to look for a profile.
+  - list:
+      about: List all user profile
   - rm:
       about: Remove profiles
       args:

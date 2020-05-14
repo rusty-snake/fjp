@@ -44,6 +44,10 @@ Do not copy the profile if it does not exists.
 
 ### help
 
+### list
+
+List all files in ~/.config/firejail.
+
 ### rm
 
 Delete a profile in the user location.

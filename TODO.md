@@ -26,10 +26,6 @@ grep
 
 Like `git grep`, a grep for /etc/firejail/* and ~/.config/firejail/*.
 
-list
-----
-
-List all proiles in ~/.config/firejail.
 
 sed
 ---

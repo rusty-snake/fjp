@@ -25,7 +25,7 @@ use crate::{
 };
 use bitflags::bitflags;
 use clap::ArgMatches;
-use log::{debug, error, info, warn};
+use log::{debug, info, warn};
 use std::env::var_os;
 use std::fs::{copy as copy_file, remove_file, rename};
 use std::path::{Path, PathBuf};

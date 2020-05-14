@@ -31,11 +31,11 @@ use std::path;
 #[macro_export]
 macro_rules! fatal {
     (target: $target:expr, $($arg:tt)+) => {{
-        error!(target: $target, $($arg)+);
+        ::log::error!(target: $target, $($arg)+);
         std::process::exit(1);
     }};
     ($($arg:tt)+) => {{
-        error!($($arg)+);
+        ::log::error!($($arg)+);
         std::process::exit(1);
     }};
 }

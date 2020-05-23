@@ -17,17 +17,21 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <https://www.gnu.org/licenses/>.
 
-DESTDIR="/usr/local"
+DESTDIR=""
 PROFILE="release"
 #TODO: FEATURES=()
 CARGO_ARGS=()
 CONFIG_STATUS_FILE="config.status"
 # shellcheck disable=SC2034
-VALID_ACTIONS=("_default_" "build" "clean" "configure" "configure-reset" "distclean" "install" "uninstall")
+VALID_ACTIONS=("_default_" "build" "clean" "configure" "configure-reset" "distclean" "install" "rpm" "strip" "uninstall")
 ACTION="_default_"
+
+unset prefix exec_prefix bindir sbindir libexec sysconfdir libdir datarootdir datadir mandir docdir
 
 # shellcheck disable=SC1090
 [ -e "$CONFIG_STATUS_FILE" ] && source "$CONFIG_STATUS_FILE"
+
+version=$(head -n3 Cargo.toml | tail -n1 | cut -d" " -f3)
 
 # Check if an array contains a value. Return: exit-code
 # usage: contains NAME_OF_ARRAY VALUE
@@ -65,9 +69,20 @@ usage() {
   USAGE: ./make.sh [OPTIONS] [ACTION]
 
     OPTIONS:
-      --devel       -- use debug profile (i.e. build w/o optimizations)
-      --help        -- show this help
-      --prefix=PATH -- install files under PATH instead of /usr/local
+      --devel                 -- use debug profile (i.e. build w/o optimizations)
+      --help  -h  -?          -- show this help
+      --prefix=PREFIX         -- [Default: /usr/local]
+      --exec_prefix=EPREFIX   -- [Default: PREFIX]
+      --bindir=DIR            -- [Default: EPREFIX/bin]
+      --sbindir=DIR           -- [Default: EPREFIX/sbin]
+      --libexecdir=DIR        -- [Default: EPREFIX/libexec]
+      --sysconfdir=DIR        -- [Default: PREFIX/etc]
+      --libdir=DIR            -- [Default: EPREFIX/lib]
+      --datarootdir=DIR       -- [Default: PREFIX/share]
+      --datadir=DIR           -- [Default: DATAROOTDIR]
+      --mandir=DIR            -- [Default: DATAROOTDIR/man]
+      --docdir=DIR            -- [Default: DATAROOTDIR/doc/fjp
+      DESTDIR=<DESTDIR>       -- [Default: "" aka /]
 
     ACTION:
       The default action is to build and install.
@@ -78,6 +93,8 @@ usage() {
       configure-reset -- reset saved configuration
       distclean  -- remove build artifacts and configuration
       install    -- install fjp
+      rpm        -- build a rpm package (for fedora)
+      strip      -- strip all binaries
       uninstall  -- uninstall fjp
 END
 }
@@ -89,13 +106,43 @@ for arg in "$@"; do
       exit
     ;;
     --prefix=*)
-      DESTDIR="${arg#*=}"
+      prefix="${arg#*=}"
+    ;;
+    --exec-prefix=*)
+      exec_prefix="${arg#*=}"
+    ;;
+    --bindir=*)
+      bindir="${arg#*=}"
+    ;;
+    --sbindir=*)
+      sbindir="${arg#*=}"
+    ;;
+    --sysconfdir=*)
+      sysconfdir="${arg#*=}"
+    ;;
+    --datadir=*)
+      datadir="${arg#*=}"
+    ;;
+    --libdir=*)
+      libdir="${arg#*=}"
+    ;;
+    --libexecdir=*)
+      libexecdir="${arg#*=}"
+    ;;
+    --mandir=*)
+      mandir="${arg#*=}"
+    ;;
+    --docdir=*)
+        docdir="${arg#*=}"
     ;;
     --devel)
       PROFILE="debug"
     ;;
     --*|-?)
       echo "Warning: Unknow commandline argument: $arg"
+    ;;
+    DESTDIR=*)
+      DESTDIR="${arg#*=}"
     ;;
     *)
       if [ "$ACTION" != "_default_" ]; then
@@ -111,6 +158,18 @@ for arg in "$@"; do
   esac
 done
 
+[ ! -v prefix ] && prefix="/usr/local"
+[ ! -v exec_prefix ] && exec_prefix="$prefix"
+[ ! -v bindir ] && bindir="$exec_prefix/bin"
+[ ! -v sbindir ] && sbindir="$exec_prefix/sbin"
+[ ! -v libexecdir ] && libexecdir="$exec_prefix/libexec"
+[ ! -v sysconfdir ] && sysconfdir="$prefix/etc"
+[ ! -v libdir ] && libdir="$exec_prefix/lib"
+[ ! -v datarootdir ] && datarootdir="$prefix/share"
+[ ! -v datadir ] && datadir="$datarootdir"
+[ ! -v mandir ] && mandir="$datarootdir/man"
+[ ! -v docdir ] && docdir="$datarootdir/doc/fjp"
+
 if [ "$PROFILE" == "release" ]; then
   CARGO_ARGS+=(--release)
 fi
@@ -124,8 +183,10 @@ case $ACTION in
     sudo ./make.sh install
   ;;
   build)
-    COMMIT=$(git describe --dirty | cut -s -d- -f3-4 | sed "s/g//")
-    export COMMIT
+    if [ -e .git ]; then
+      COMMIT=$(git describe --dirty | cut -s -d- -f3-4 | sed "s/g//")
+      export COMMIT
+    fi
     cargo build "${CARGO_ARGS[@]}"
     ./man/mkman.sh
     OUT_DIR=$(find_outdir)
@@ -137,6 +198,17 @@ case $ACTION in
   configure)
     true > "$CONFIG_STATUS_FILE"
     echo "DESTDIR=\"$DESTDIR\"" >> "$CONFIG_STATUS_FILE"
+    echo "prefix=\"$prefix\"" >> "$CONFIG_STATUS_FILE"
+    echo "exec_prefix=\"$exec_prefix\"" >> "$CONFIG_STATUS_FILE"
+    echo "bindir=\"$bindir\"" >> "$CONFIG_STATUS_FILE"
+    echo "sbindir=\"$sbindir\"" >> "$CONFIG_STATUS_FILE"
+    echo "libexecdir=\"$libexecdir\"" >> "$CONFIG_STATUS_FILE"
+    echo "sysconfdir=\"$sysconfdir\"" >> "$CONFIG_STATUS_FILE"
+    echo "libdir=\"$libdir\"" >> "$CONFIG_STATUS_FILE"
+    echo "datarootdir=\"$datarootdir\"" >> "$CONFIG_STATUS_FILE"
+    echo "datadir=\"$datadir\"" >> "$CONFIG_STATUS_FILE"
+    echo "mandir=\"$mandir\"" >> "$CONFIG_STATUS_FILE"
+    echo "docdir=\"$docdir\"" >> "$CONFIG_STATUS_FILE"
     echo "PROFILE=\"$PROFILE\"" >> "$CONFIG_STATUS_FILE"
   ;;
   configure-reset)
@@ -147,24 +219,30 @@ case $ACTION in
   ;;&
   install)
     OUT_DIR=$(find_outdir)
-    install -Dm0755 target/release/fjp "$DESTDIR"/bin/fjp
-    install -Dm0644 "$OUT_DIR"/_fjp.patched "$DESTDIR"/share/zsh/site-functions/_fjp
-    install -Dm0644 "$OUT_DIR"/fjp.bash "$DESTDIR"/share/bash-completion/completions/fjp
-    install -Dm0644 "$OUT_DIR"/fjp.fish "$DESTDIR"/share/fish/completions/fjp.fish
-    install -Dm0644 AUTHORS "$DESTDIR"/share/doc/fjp/AUTHORS
-    install -Dm0644 CHANGELOG.md "$DESTDIR"/share/doc/fjp/CHANGELOG.md
-    install -Dm0644 COPYING "$DESTDIR"/share/doc/fjp/COPYING
-    install -Dm0644 README.md "$DESTDIR"/share/doc/fjp/README.md
-    install -Dm0644 TODO.md "$DESTDIR"/share/doc/fjp/TODO.md
-    install -Dm0644 man/fjp.1.gz "$DESTDIR"/share/man/man1/fjp.1.gz
+    install -Dm0755 target/release/fjp "$DESTDIR$bindir"/fjp
+    install -Dm0644 "$OUT_DIR"/_fjp.patched "$DESTDIR$datadir"/zsh/site-functions/_fjp
+    install -Dm0644 "$OUT_DIR"/fjp.bash "$DESTDIR$datadir"/bash-completion/completions/fjp
+    install -Dm0644 "$OUT_DIR"/fjp.fish "$DESTDIR$datadir"/fish/completions/fjp.fish
+    install -Dm0644 AUTHORS "$DESTDIR$docdir"/AUTHORS
+    install -Dm0644 CHANGELOG.md "$DESTDIR$docdir"/CHANGELOG.md
+    install -Dm0644 COPYING "$DESTDIR$docdir"/COPYING
+    install -Dm0644 README.md "$DESTDIR$docdir"/README.md
+    install -Dm0644 TODO.md "$DESTDIR$docdir"/TODO.md
+    install -Dm0644 man/fjp.1.gz "$DESTDIR$mandir"/man1/fjp.1.gz
+  ;;
+  rpm)
+    ./platform/fedora/mkrpm.sh "$version"
+  ;;
+  strip)
+    strip target/release/fjp
   ;;
   uninstall)
     rm -rf \
-      "$DESTDIR"/bin/fjp \
-      "$DESTDIR"/share/doc/fjp \
-      "$DESTDIR"/share/bash-completion/completions/fjp \
-      "$DESTDIR"/share/fish/completions/fjp.fish \
-      "$DESTDIR"/share/zsh/site-functions/_fjp \
-      "$DESTDIR"/share/man/man1/fjp.1.gz
+      "$DESTDIR$bindir"/fjp \
+      "$DESTDIR$docdir" \
+      "$DESTDIR$datadir"/bash-completion/completions/fjp \
+      "$DESTDIR$datadir"/fish/completions/fjp.fish \
+      "$DESTDIR$datadir"/zsh/site-functions/_fjp \
+      "$DESTDIR$mandir"/man1/fjp.1.gz
   ;;
 esac

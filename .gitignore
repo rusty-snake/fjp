@@ -1,7 +1,20 @@
+# tar's --exclude-vcs-ignore (used in platform/fedora/mkrpm.sh) option reads this
+# file as simple shell-style glob pattern and does not support lines starting with
+# a '/' (which will be interpreted as the file-system root directory). Therefore
+# we need to add every file twice, once for git and once for tar.
+
+# for git
 /target
 /macros/target
 /config.status
 /man/fjp.man
 /man/fjp.1.gz
+/*.rpm
 
-*.swp
+# for tar
+./target
+./macros/target
+./config.status
+./man/fjp.man
+./man/fjp.1.gz
+./*.rpm

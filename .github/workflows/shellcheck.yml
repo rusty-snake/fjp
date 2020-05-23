@@ -5,10 +5,12 @@ on:
     paths:
       - .github/workflows/shellcheck.yml
       - 'make.sh'
+      - 'platform/fedora/mkrpm.sh'
   pull_request:
     paths:
       - .github/workflows/shellcheck.yml
       - 'make.sh'
+      - 'platform/fedora/mkrpm.sh'
 
 jobs:
   shellcheck:
@@ -18,3 +20,4 @@ jobs:
     - uses: actions/checkout@v2
     - run: shellcheck --version
     - run: shellcheck make.sh
+    - run: shellcheck platform/fedora/mkrpm.sh

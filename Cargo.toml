@@ -17,9 +17,9 @@ full = ["color-backtrace"]
 
 [dependencies]
 anyhow = "1.0"
+bitflags = "1.2"
 lazy_static = "1"
 log = "0.4"
-bitflags = "1.2"
 termcolor = "1.1"
 
 [dependencies.clap]

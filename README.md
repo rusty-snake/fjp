@@ -15,7 +15,10 @@ Get started
 1. Install rust: <https://www.rust-lang.org/tools/install>
 
 ```
-$ curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+$ curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs > rustup-init.sh
+$ bash rustup-init.sh --no-modify-path --profile minimal
+
+# If you use Arch or Fedora, you can also install rust via you package-manager.
 $ sudo pacman -S rust # Arch Linux
 $ sudo dnf install cargo # Fedora
 ```

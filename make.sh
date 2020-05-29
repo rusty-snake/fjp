@@ -246,3 +246,5 @@ case $ACTION in
       "$DESTDIR$mandir"/man1/fjp.1.gz
   ;;
 esac
+
+# vim: set ts=2 sw=2 expandtab:

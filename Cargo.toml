@@ -19,13 +19,17 @@ full = ["color-backtrace"]
 anyhow = "1.0"
 lazy_static = "1"
 log = "0.4"
-env_logger = "0.7"
 bitflags = "1.2"
 termcolor = "1.1"
 
 [dependencies.clap]
 version = "2"
 features = [ "yaml", "wrap_help" ]
+
+[dependencies.env_logger]
+version = "0.7"
+default-features = false
+features = ["termcolor", "atty"]
 
 [dependencies.color-backtrace]
 version = "0.3"

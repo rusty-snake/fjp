@@ -18,11 +18,9 @@
  */
 
 use log::debug;
-use log::{info, trace};
 use std::env;
 use std::ffi;
 use std::fmt;
-use std::fs;
 use std::io;
 use std::io::prelude::*;
 use std::path;
@@ -117,89 +115,6 @@ pub fn home_dir() -> Option<path::PathBuf> {
     var_os("HOME")
         .and_then(|h| if h.is_empty() { None } else { Some(h) })
         .map(PathBuf::from)
-}
-
-//
-// which
-//
-
-/// function similar to which (1)
-///
-/// The two main modes are:
-/// 1. Passing a absolute path (e.g. `/usr/bin/vim`)
-/// 2. Passing a program name (e.g. `vim`)
-///
-/// The first will check if `/usr/bin/vim` exists and return `Ok(PathBuf::from("/usr/bin/vim"))`.
-/// The second one will search `vim` in `$PATH`
-/// and return the full path to the first found program.
-///
-/// # Errors
-///
-/// TODO
-///
-/// # Examples
-///
-/// ```
-/// use crate::utils::which;
-///
-/// let browser = which("firefox")?;
-/// let email = which("/usr/bin/thunderbird")?;
-///
-/// use std::env::args_os;
-/// match which(args_os().nth(1)) {
-///     Ok(path) => println!("found: {}", path.display()),
-///     Err(err) => eprintln!("error: {}", err),
-/// }
-/// ```
-///
-pub fn which<T: AsRef<ffi::OsStr>>(bin: T) -> anyhow::Result<path::PathBuf> {
-    use anyhow::{anyhow, bail};
-    use env::{split_paths, var_os};
-    use fs::read_dir;
-    use path::Path;
-
-    let bin = bin.as_ref();
-
-    let bin_p = Path::new(bin);
-    if bin_p.is_absolute() {
-        if bin_p.exists() {
-            Ok(bin_p.to_path_buf())
-        } else {
-            Err(anyhow!("{} does not exists", bin_p.to_string_lossy()))
-        }
-    } else {
-        let paths = if let Some(paths) = var_os("PATH").filter(|s| !s.is_empty()) {
-            paths
-        } else {
-            bail!("$PATH is not set or empty");
-        };
-
-        let mut full_path = None;
-        'search: for path in split_paths(&paths) {
-            debug!("Processing path '{}'", path.to_string_lossy());
-            if let Ok(entrys) = read_dir(&path) {
-                for entry in entrys {
-                    let entry = entry?;
-                    trace!("Processing file '{}'", entry.file_name().to_string_lossy());
-                    if entry.file_name() == bin {
-                        full_path = Some(entry.path());
-                        break 'search;
-                    }
-                }
-            } else {
-                info!("Failed to read_dir '{}'", path.to_string_lossy());
-            }
-        }
-
-        if let Some(path) = full_path {
-            Ok(path)
-        } else {
-            Err(anyhow!(
-                "Could not find '{}' in $PATH",
-                bin.to_string_lossy()
-            ))
-        }
-    }
 }
 
 //

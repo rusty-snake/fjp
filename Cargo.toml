@@ -16,6 +16,7 @@ default = []
 full = ["color-backtrace"]
 
 [dependencies]
+anyhow = "1.0"
 lazy_static = "1"
 log = "0.4"
 env_logger = "0.7"

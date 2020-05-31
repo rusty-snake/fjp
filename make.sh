@@ -49,6 +49,24 @@ contains() {
   return $contained
 }
 
+find_cargo() {
+  local cargo
+  # Using `command -v cargo` here instead of `which cargo` as shellcheck suggest,
+  # causes an infinitiy loop, because `command -v` finds the `cargo` function
+  # from below if `find_cargo` is started after the declatarion of cargo.
+  # which always finds the binary on the disk.
+  # disable SC2230
+  cargo=$(which cargo 2>/dev/null)
+  if [ -z "$cargo" ]; then
+    if [ -e "$HOME/.cargo/bin/cargo" ]; then
+      cargo="$HOME/.cargo/bin/cargo"
+    else
+      return 1
+    fi
+  fi
+  echo "$cargo"
+}
+
 find_outdir() {
   local out_dir=""
   local invoked_ts_path=""
@@ -62,6 +80,13 @@ find_outdir() {
     fi
   done
   echo "$out_dir/out"
+}
+
+cargo() {
+  if [ ! -v cargo ]; then
+    cargo=$(find_cargo || exit 1)
+  fi
+  $cargo "$@"
 }
 
 usage() {
@@ -197,6 +222,7 @@ case $ACTION in
     cargo clean
   ;;
   configure)
+    cargo=$(find_cargo || exit 1)
     true > "$CONFIG_STATUS_FILE"
     echo "DESTDIR=\"$DESTDIR\"" >> "$CONFIG_STATUS_FILE"
     echo "prefix=\"$prefix\"" >> "$CONFIG_STATUS_FILE"
@@ -211,6 +237,7 @@ case $ACTION in
     echo "mandir=\"$mandir\"" >> "$CONFIG_STATUS_FILE"
     echo "docdir=\"$docdir\"" >> "$CONFIG_STATUS_FILE"
     echo "PROFILE=\"$PROFILE\"" >> "$CONFIG_STATUS_FILE"
+    echo "cargo=\"$cargo\"" >> "$CONFIG_STATUS_FILE"
   ;;
   configure-reset)
     rm "$CONFIG_STATUS_FILE"

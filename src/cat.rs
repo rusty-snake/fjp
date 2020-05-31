@@ -27,8 +27,6 @@ use std::fs::read_to_string;
 use std::path::PathBuf;
 use termcolor::Color;
 
-static mut RECUSION_DEPTH: i32 = 0;
-
 #[derive(Debug, Default)]
 struct Options {
     show_globals: bool,
@@ -58,16 +56,14 @@ pub fn start(cli: &ArgMatches<'_>) {
         show_redirects: !cli.is_present("no-redirects"),
     };
 
-    process(&profile, &opts);
+    process(&profile, &opts, 0);
 }
 
-fn process(profile: &Profile, opts: &Options) {
-    unsafe {
-        if RECUSION_DEPTH >= 16 {
-            fatal!("To many include levels");
-        }
-        RECUSION_DEPTH += 1;
+fn process(profile: &Profile, opts: &Options, mut depth: u8) {
+    if depth >= 16 {
+        fatal!("To many include levels");
     }
+    depth += 1;
 
     let [locals, profiles] = parse(&profile.data);
 
@@ -81,12 +77,8 @@ fn process(profile: &Profile, opts: &Options) {
 
     if opts.show_redirects {
         if let Some(profiles) = profiles {
-            show_profiles(&profiles, opts);
+            show_profiles(&profiles, opts, depth);
         }
-    }
-
-    unsafe {
-        RECUSION_DEPTH -= 1;
     }
 }
 
@@ -146,7 +138,7 @@ fn show_locals(locals: &[String], opts: &Options) {
         .for_each(|profile| show_file(&profile));
 }
 
-fn show_profiles(profiles: &[String], opts: &Options) {
+fn show_profiles(profiles: &[String], opts: &Options, depth: u8) {
     for name in profiles {
         let path = match find_profile(name) {
             Some(path) => path,
@@ -164,6 +156,6 @@ fn show_profiles(profiles: &[String], opts: &Options) {
             }
         };
 
-        process(&Profile { path, data }, opts);
+        process(&Profile { path, data }, opts, depth);
     }
 }

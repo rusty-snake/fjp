@@ -23,7 +23,7 @@ PROFILE="release"
 CARGO_ARGS=()
 CONFIG_STATUS_FILE="config.status"
 # shellcheck disable=SC2034
-VALID_ACTIONS=("_default_" "build" "clean" "configure" "configure-reset" "distclean" "install" "rpm" "strip" "uninstall")
+VALID_ACTIONS=("_default_" "build" "clean" "configure" "configure-reset" "distclean" "gen-docs" "install" "rpm" "strip" "uninstall")
 ACTION="_default_"
 
 unset prefix exec_prefix bindir sbindir libexec sysconfdir libdir datarootdir datadir mandir docdir
@@ -92,6 +92,7 @@ usage() {
       configure  -- save configuration
       configure-reset -- reset saved configuration
       distclean  -- remove build artifacts and configuration
+      gen-docs   -- generate documentation (for the code)
       install    -- install fjp
       rpm        -- build a rpm package (for fedora)
       strip      -- strip all binaries
@@ -216,7 +217,15 @@ case $ACTION in
   ;;
   distclean)
     rm -rf target "$CONFIG_STATUS_FILE"
-  ;;&
+  ;;
+  gen-docs)
+    #TODO: CARGO_ARGS+="--no-deps"
+    cargo doc "${CARGO_ARGS[@]}"
+    cargo doc "${CARGO_ARGS[@]}" --package macros
+    echo "You can now read the docs by opening one of the urls below in your browser."
+    echo "  file://$PWD/target/doc/fjp/index.html"
+    echo "  file://$PWD/target/doc/macros/index.html"
+  ;;
   install)
     OUT_DIR=$(find_outdir)
     install -Dm0755 target/release/fjp "$DESTDIR$bindir"/fjp

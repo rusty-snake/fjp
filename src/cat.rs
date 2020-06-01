@@ -24,7 +24,9 @@ use crate::{
 use clap::ArgMatches;
 use log::{debug, error, warn};
 use std::fs::read_to_string;
+use std::io;
 use std::path::PathBuf;
+use std::process::{Child, Command, Stdio};
 use termcolor::Color;
 
 #[derive(Debug, Default)]
@@ -43,6 +45,30 @@ struct Profile {
 pub fn start(cli: &ArgMatches<'_>) {
     debug!("subcommand: cat");
 
+    let cmd: &[&str] = if cli.is_present("no-pager") {
+        &["cat"]
+    } else {
+        &["less", "-R"]
+    };
+
+    let mut child: Option<Child> = Command::new(cmd[0])
+        .args(&cmd[1..])
+        .stdin(Stdio::piped())
+        .spawn()
+        .map_or_else(
+            |err| {
+                warn!("Failed to start {}: {}", cmd[0], err);
+                warn!("Continue without it.");
+                None
+            },
+            Some,
+        );
+    let mut output: Box<dyn io::Write> = if let Some(ref mut child) = child {
+        Box::new(child.stdin.as_mut().unwrap())
+    } else {
+        Box::new(io::stdout())
+    };
+
     let name = get_name1(cli.value_of("PROFILE_NAME").unwrap());
     let path = find_profile(&name).unwrap_or_else(|| fatal!("Can not find {}.", &name));
     let data = read_to_string(&path)
@@ -56,10 +82,15 @@ pub fn start(cli: &ArgMatches<'_>) {
         show_redirects: !cli.is_present("no-redirects"),
     };
 
-    process(&profile, &opts, 0);
+    process(&profile, &opts, &mut output, 0);
+
+    drop(output); // We need to drop output here, otherwise we would have two mutable references.
+    if let Some(ref mut child) = child {
+        child.wait().unwrap();
+    }
 }
 
-fn process(profile: &Profile, opts: &Options, mut depth: u8) {
+fn process<W: io::Write>(profile: &Profile, opts: &Options, output: &mut W, mut depth: u8) {
     if depth >= 16 {
         fatal!("To many include levels");
     }
@@ -69,15 +100,15 @@ fn process(profile: &Profile, opts: &Options, mut depth: u8) {
 
     if opts.show_locals {
         if let Some(locals) = locals {
-            show_locals(&locals, opts);
+            show_locals(&locals, opts, output);
         }
     }
 
-    show_file(profile);
+    show_file(profile, output);
 
     if opts.show_redirects {
         if let Some(profiles) = profiles {
-            show_profiles(&profiles, opts, depth);
+            show_profiles(&profiles, opts, output, depth);
         }
     }
 }
@@ -106,18 +137,20 @@ fn parse(data: &str) -> [Option<Vec<String>>; 2] {
     ]
 }
 
-fn show_file(profile: &Profile) {
-    println!(
-        "{}",
-        ColoredText::new(
-            Color::Blue,
-            &format!("# {}:", profile.path.to_string_lossy())
+fn show_file<W: io::Write>(profile: &Profile, output: &mut W) {
+    output
+        .write_all(
+            ColoredText::new(
+                Color::Blue,
+                &format!("# {}:\n", profile.path.to_string_lossy()),
+            )
+            .as_bytes(),
         )
-    );
-    print!("{}", profile.data);
+        .unwrap();
+    output.write_all(profile.data.as_bytes()).unwrap();
 }
 
-fn show_locals(locals: &[String], opts: &Options) {
+fn show_locals<W: io::Write>(locals: &[String], opts: &Options, output: &mut W) {
     locals
         .iter()
         .filter(|name| opts.show_globals || *name != "globals.local")
@@ -135,10 +168,10 @@ fn show_locals(locals: &[String], opts: &Options) {
                 None
             }
         })
-        .for_each(|profile| show_file(&profile));
+        .for_each(|profile| show_file(&profile, output));
 }
 
-fn show_profiles(profiles: &[String], opts: &Options, depth: u8) {
+fn show_profiles<W: io::Write>(profiles: &[String], opts: &Options, output: &mut W, depth: u8) {
     for name in profiles {
         let path = match find_profile(name) {
             Some(path) => path,
@@ -156,6 +189,6 @@ fn show_profiles(profiles: &[String], opts: &Options, depth: u8) {
             }
         };
 
-        process(&Profile { path, data }, opts, depth);
+        process(&Profile { path, data }, opts, output, depth);
     }
 }

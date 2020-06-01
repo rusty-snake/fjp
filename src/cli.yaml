@@ -34,7 +34,7 @@ subcommands:
         - no-pager:
             long: no-pager
             help: Do not pipe output into a pager.
-            long_help: Do not pipe output into a pager. (Actually the output is always without a pager).
+            long_help: Do not pipe output into a pager.
         - no-redirects:
             long: no-redirects
             help: Do not show redirect profiles.

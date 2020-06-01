@@ -17,6 +17,8 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
+#![allow(dead_code)] // This module acts more like a library, so not yet used is ok.
+
 use log::debug;
 use std::env;
 use std::ffi;
@@ -121,11 +123,17 @@ pub fn home_dir() -> Option<path::PathBuf> {
 // ColoredText
 //
 
-#[derive(Clone, Debug, PartialEq)]
+/// A colored string
+///
+/// `termcolor` does not support simple coloring of string like `ansi_term` with
+/// `Red.paint("Hello")` or `colored` with `"Hello".green()` does.
+/// Instead you must manually write `set_color`, `write`, `reset`.
+#[derive(Clone, Debug, Default, PartialEq, Eq, Hash)]
 pub struct ColoredText {
     inner: String,
 }
 impl ColoredText {
+    /// Create a new `ColoredText` instances
     pub fn new(color: termcolor::Color, text: &str) -> Self {
         use termcolor::{Buffer, ColorSpec, WriteColor};
 
@@ -140,10 +148,50 @@ impl ColoredText {
             inner: String::from_utf8_lossy(buffer.as_slice()).into_owned(),
         }
     }
+
+    /// Get a references to the underlying String
+    pub fn get_ref(&self) -> &String {
+        &self.inner
+    }
+
+    /// Get a mutable references to the underlying String
+    ///
+    /// **Warning:** Be care full when editing this String, at the begin and end are
+    /// ANSI-escape sequences. If you edit them, you might get ugly output.
+    ///
+    pub fn get_mut(&mut self) -> &mut String {
+        &mut self.inner
+    }
+
+    pub fn as_bytes(&self) -> &[u8] {
+        self.inner.as_bytes()
+    }
+
+    pub fn as_str(&self) -> &str {
+        self.inner.as_str()
+    }
+
+    pub fn into_bytes(self) -> Vec<u8> {
+        self.inner.into_bytes()
+    }
+
+    pub fn into_string(self) -> String {
+        self.inner
+    }
 }
 impl fmt::Display for ColoredText {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         fmt::Display::fmt(&self.inner, f)
+    }
+}
+impl AsRef<[u8]> for ColoredText {
+    fn as_ref(&self) -> &[u8] {
+        self.inner.as_bytes()
+    }
+}
+impl AsRef<str> for ColoredText {
+    fn as_ref(&self) -> &str {
+        self.inner.as_str()
     }
 }
 

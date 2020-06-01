@@ -13,8 +13,6 @@ edit
 cat
 ---
 
- - re-add a pager (like git or systemctl)
-
 disable/enable
 --------------
 

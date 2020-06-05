@@ -17,98 +17,83 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-use crate::profile::Profile;
-use crate::utils::AddTo;
-use std::borrow::Cow;
+//! Module for dealing with the directories where profiles are stored
+
+#![allow(dead_code)]
+
 use std::convert::From;
-use std::ffi::{OsStr, OsString};
 use std::fmt;
+use std::io::Result as IoResult;
 use std::path::{Path, PathBuf};
 
-#[derive(Clone, Debug, Default, Eq, PartialEq)]
-pub struct Location<'a> {
-    inner: Cow<'a, Path>,
+/// A directory where firejail-profiles are stored, such as `/etc/firejail/`
+///
+/// # Examples
+///
+/// ```
+/// let system_l = Location::from("/etc/firejail/")
+/// let firefox_profile_path;
+/// if system.has_profile("firefox.profile") {
+///     firefox_profile_path = system_l.get_profile_path("firefox.profile");
+/// }
+/// ```
+#[derive(Clone, Debug, Default, Eq, Hash, PartialEq)]
+pub struct Location {
+    inner: PathBuf,
 }
 
-impl Location<'_> {
-    pub fn new_join<P1, P2>(path1: P1, path2: P2) -> Self
-    where
-        P1: Into<PathBuf>,
-        P2: AsRef<Path>,
-    {
-        Self {
-            inner: Cow::from(path2.as_ref().add_to(path1.into())),
-        }
+impl Location {
+    /// Get the path to profile named `name` in this location
+    ///
+    /// NOTE: This does not check if `name` exists.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// assert_eq!(
+    ///     Location::from("/etc/firejail/").get_profile_path("firefox.profile"),
+    ///     PathBuf::from("/etc/firejail/firefox.profile"),
+    /// );
+    /// ```
+    pub fn get_profile_path(&self, name: &str) -> PathBuf {
+        let mut p = self.inner.to_path_buf();
+        p.push(name);
+        p
     }
 
-    pub fn get_profile<'a>(&self, name: &'a str) -> Profile<'a> {
-        Profile {
-            name,
-            path: {
-                let mut p = self.inner.to_path_buf();
-                p.push(name);
-                p
-            },
-            data: None,
+    /// Check if a file named `name` exists in this location
+    pub fn has_profile(&self, name: &str) -> IoResult<bool> {
+        for entry in self.inner.read_dir()? {
+            if entry?.file_name() == name {
+                return Ok(true);
+            }
         }
+        Ok(false)
     }
 
     pub fn get_ref(&self) -> &Path {
         &self.inner
     }
 
+    /// Clone the inner PathBuf and return it
     pub fn to_owned_inner(&self) -> PathBuf {
         self.inner.to_path_buf()
     }
 }
 
-impl AsRef<Path> for Location<'_> {
+impl AsRef<Path> for Location {
     fn as_ref(&self) -> &Path {
         &self.inner
     }
 }
 
-impl<'a> From<&'a Path> for Location<'a> {
-    fn from(p: &'a Path) -> Self {
-        Self {
-            inner: Cow::Borrowed(p),
-        }
+impl<T: Into<PathBuf>> From<T> for Location {
+    fn from(p: T) -> Self {
+        Self { inner: p.into() }
     }
 }
 
-impl From<PathBuf> for Location<'_> {
-    fn from(p: PathBuf) -> Self {
-        Self {
-            inner: Cow::Owned(p),
-        }
-    }
-}
-
-impl<'a> From<&'a str> for Location<'a> {
-    fn from(s: &'a str) -> Self {
-        Self::from(Path::new(s))
-    }
-}
-
-impl From<String> for Location<'_> {
-    fn from(s: String) -> Self {
-        Self::from(PathBuf::from(s))
-    }
-}
-
-impl<'a> From<&'a OsStr> for Location<'a> {
-    fn from(s: &'a OsStr) -> Self {
-        Self::from(Path::new(s))
-    }
-}
-
-impl From<OsString> for Location<'_> {
-    fn from(s: OsString) -> Self {
-        Self::from(PathBuf::from(s))
-    }
-}
-
-impl fmt::Display for Location<'_> {
+impl fmt::Display for Location {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> Result<(), fmt::Error> {
         write!(f, "{}", self.inner.to_string_lossy())
     }
@@ -119,34 +104,20 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_new_join() {
+    fn test_get_profile_path() {
         assert_eq!(
-            Location::new_join("/java", "script"),
-            Location {
-                inner: Cow::from(Path::new("/java/script"))
-            },
-        );
-    }
-
-    #[test]
-    fn test_get_profile() {
-        assert_eq!(
-            Location::from("/").get_profile("MyProfile"),
-            Profile {
-                name: "MyProfile",
-                path: PathBuf::from("/MyProfile"),
-                data: None
-            },
+            Location::from("/").get_profile_path("MyProfile"),
+            PathBuf::from("/MyProfile"),
         );
     }
 
     #[test]
     fn test_get_ref() {
-        assert_eq!(Location::from("/").get_ref(), Path::new("/"),);
+        assert_eq!(Location::from("/").get_ref(), Path::new("/"));
     }
 
     #[test]
     fn test_to_owned_inner() {
-        assert_eq!(Location::from("/").to_owned_inner(), PathBuf::from("/"),);
+        assert_eq!(Location::from("/").to_owned_inner(), PathBuf::from("/"));
     }
 }

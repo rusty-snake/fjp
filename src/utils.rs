@@ -17,11 +17,12 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
+//! Module for various helper functions, macros, types, traits, ...
+
 #![allow(dead_code)] // This module acts more like a library, so not yet used is ok.
 
 use log::debug;
 use std::env;
-use std::ffi;
 use std::fmt;
 use std::io;
 use std::io::prelude::*;
@@ -110,6 +111,12 @@ pub fn get_name1(raw: &str) -> String {
     }
 }
 
+/// Get the users home directory
+///
+/// _ATM this only checks $HOME. TODO: `getpw*` fallback_
+///
+/// It returns `None` if $HOME is not set or empty,
+/// otherwise it returns `Some(PathBuf::from($HOME))`.
 pub fn home_dir() -> Option<path::PathBuf> {
     use env::var_os;
     use path::PathBuf;
@@ -128,20 +135,21 @@ pub fn home_dir() -> Option<path::PathBuf> {
 /// `termcolor` does not support simple coloring of string like `ansi_term` with
 /// `Red.paint("Hello")` or `colored` with `"Hello".green()` does.
 /// Instead you must manually write `set_color`, `write`, `reset`.
+/// This type tries to fixes this.
 #[derive(Clone, Debug, Default, PartialEq, Eq, Hash)]
 pub struct ColoredText {
     inner: String,
 }
 impl ColoredText {
     /// Create a new `ColoredText` instances
-    pub fn new(color: termcolor::Color, text: &str) -> Self {
+    pub fn new(color: termcolor::Color, text: impl AsRef<str>) -> Self {
         use termcolor::{Buffer, ColorSpec, WriteColor};
 
         let mut buffer = Buffer::ansi();
         buffer
             .set_color(ColorSpec::new().set_fg(Some(color)))
             .unwrap();
-        buffer.write_all(text.as_bytes()).unwrap();
+        buffer.write_all(text.as_ref().as_bytes()).unwrap();
         buffer.reset().unwrap();
 
         Self {
@@ -192,31 +200,6 @@ impl AsRef<[u8]> for ColoredText {
 impl AsRef<str> for ColoredText {
     fn as_ref(&self) -> &str {
         self.inner.as_str()
-    }
-}
-
-pub trait AddTo<T> {
-    fn add_to(&self, other: T) -> T;
-}
-impl AddTo<path::PathBuf> for path::Path {
-    fn add_to(&self, mut other: path::PathBuf) -> path::PathBuf {
-        other.push(self);
-        other
-    }
-}
-
-pub trait PushExtension {
-    fn push_extension(self, new_ext: impl AsRef<ffi::OsStr>) -> Self;
-}
-impl PushExtension for path::PathBuf {
-    fn push_extension(mut self, new_ext: impl AsRef<ffi::OsStr>) -> Self {
-        let mut ext = self
-            .extension()
-            .unwrap_or_else(|| ffi::OsStr::new(""))
-            .to_os_string();
-        ext.push(new_ext);
-        self.set_extension(ext);
-        self
     }
 }
 

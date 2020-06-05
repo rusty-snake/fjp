@@ -17,18 +17,22 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
+//! A commandline program to deal with firejail profiles.
+
 use clap::{crate_description, load_yaml, App};
 use env_logger::{Builder, Env};
 use lazy_static::lazy_static;
 
 mod location;
 mod profile;
+mod profile_stream;
 mod utils;
 
 use location::Location;
 use utils::home_dir;
 
 mod cat;
+mod diff;
 mod disable;
 mod edit;
 mod enable;
@@ -37,6 +41,7 @@ mod list;
 mod rm;
 
 use cat::start as start_cat;
+use diff::start as start_diff;
 use disable::start as start_disable;
 use edit::start as start_edit;
 use enable::start as start_enable;
@@ -45,11 +50,12 @@ use list::start as start_list;
 use rm::start as start_rm;
 
 lazy_static! {
-    static ref SYSTEM_PROFILE_DIR: Location<'static> = Location::from("/etc/firejail/");
-    static ref USER_PROFILE_DIR: Location<'static> = {
-        Location::new_join(
-            home_dir().expect("Can not get user home dir. Is $HOME set?"),
-            ".config/firejail/",
+    static ref SYSTEM_PROFILE_DIR: Location = Location::from("/etc/firejail/");
+    static ref USER_PROFILE_DIR: Location = {
+        Location::from(
+            home_dir()
+                .expect("Can not get user home dir. Is $HOME set?")
+                .join(".config/firejail/"),
         )
     };
 }
@@ -71,6 +77,7 @@ fn main() {
         .get_matches();
     match matches.subcommand() {
         ("cat", Some(sub_matches)) => start_cat(sub_matches),
+        ("diff", Some(sub_matches)) => start_diff(sub_matches),
         ("disable", Some(sub_matches)) => start_disable(sub_matches),
         ("edit", Some(sub_matches)) => start_edit(sub_matches),
         ("enable", Some(sub_matches)) => start_enable(sub_matches),

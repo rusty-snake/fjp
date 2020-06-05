@@ -50,7 +50,7 @@ fn enable_user() {
 }
 
 fn enable_profile(profile: &str) {
-    let disabled_profile = DISABLED_DIR.get_profile(profile).path;
+    let disabled_profile = DISABLED_DIR.get_profile_path(profile);
     debug!("disabled profile: {}", disabled_profile.to_string_lossy());
 
     let enabled_profile = profile_path!(USER / profile);

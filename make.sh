@@ -55,7 +55,7 @@ find_cargo() {
   # causes an infinitiy loop, because `command -v` finds the `cargo` function
   # from below if `find_cargo` is started after the declatarion of cargo.
   # which always finds the binary on the disk.
-  # disable SC2230
+  # shellcheck disable=SC2230
   cargo=$(which cargo 2>/dev/null)
   if [ -z "$cargo" ]; then
     if [ -e "$HOME/.cargo/bin/cargo" ]; then
@@ -80,6 +80,14 @@ find_outdir() {
     fi
   done
   echo "$out_dir/out"
+}
+
+get_fjp_version() {
+  local cargo_toml_versions_line
+  cargo_toml_versions_line=$(head -n3 Cargo.toml | tail -n1)
+  grep -Eo \
+   "[[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+(-[[:alnum:]]+)?" \
+    <<<"$cargo_toml_versions_line"
 }
 
 cargo() {
@@ -210,8 +218,12 @@ case $ACTION in
   ;;
   build)
     if [ -e .git ]; then
-      COMMIT=$(git describe --dirty | cut -s -d- -f3-4 | sed "s/g//")
-      export COMMIT
+      FJP_COMMIT=$(git rev-parse --short HEAD --)
+      if ! git diff-index --quiet HEAD --; then
+        FJP_COMMIT="$FJP_COMMIT-dirty"
+      fi
+      FJP_VERSION=$(get_fjp_version)
+      export FJP_COMMIT FJP_VERSION
     fi
     cargo build "${CARGO_ARGS[@]}"
     ./man/mkman.sh

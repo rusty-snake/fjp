@@ -42,6 +42,15 @@ subcommands:
             index: 1
             required: true
             help: The name of the profile to show.
+  - diff:
+      about: Show the differences between two profiles
+      args:
+        - PROFILE_NAME1:
+            index: 1
+            required: true
+        - PROFILE_NAME2:
+            required: true
+            index: 2
   - disable:
       about: Disable profiles
       args:

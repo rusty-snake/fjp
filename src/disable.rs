@@ -30,7 +30,7 @@ use std::fs::{create_dir, rename};
 use std::io::Result as IoResult;
 
 lazy_static! {
-    pub static ref DISABLED_DIR: Location<'static> = {
+    pub static ref DISABLED_DIR: Location = {
         let mut path = USER_PROFILE_DIR.to_owned_inner();
         path.push("disabled");
         if !path.exists() {
@@ -81,7 +81,7 @@ fn disable_profile(profile: &str) {
         return;
     }
 
-    let disabled_profile = DISABLED_DIR.get_profile(profile).path;
+    let disabled_profile = DISABLED_DIR.get_profile_path(profile);
     debug!("disabled profile: {}", disabled_profile.to_string_lossy());
 
     if disabled_profile.exists() {

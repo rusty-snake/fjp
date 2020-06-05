@@ -19,10 +19,7 @@
 
 #![allow(clippy::unreadable_literal)] // bitflags are easier to read without underscores!!
 
-use crate::{
-    fatal, profile_path,
-    utils::{get_name1, PushExtension},
-};
+use crate::{fatal, profile_path, utils::get_name1};
 use bitflags::bitflags;
 use clap::ArgMatches;
 use log::{debug, info, warn};
@@ -68,7 +65,7 @@ pub fn start(cli: &ArgMatches<'_>) {
 }
 
 fn prepare_tmp_edit(user_profile: &Path, system_profile: &Path, flags: Flags) {
-    let backup_profile = user_profile.to_path_buf().push_extension(".bak");
+    let backup_profile = user_profile.with_extension(".bak");
 
     if user_profile.exists() {
         rename(user_profile, &backup_profile)

@@ -39,16 +39,16 @@ pub fn start(cli: &ArgMatches<'_>) {
     )
     .unwrap_or_else(|err| fatal!("Failed to read {}: {}", profile2_name, err));
 
-    let profile1_stream = dbg!(profile1
+    let profile1_stream = profile1
         .raw_data()
         .unwrap()
         .parse::<ProfileStream>()
-        .unwrap());
-    let profile2_stream = dbg!(profile2
+        .unwrap();
+    let profile2_stream = profile2
         .raw_data()
         .unwrap()
         .parse::<ProfileStream>()
-        .unwrap());
+        .unwrap();
 
     let profile1_unique = profile1_stream
         .iter()

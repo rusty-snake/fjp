@@ -25,7 +25,7 @@ between_file="$here"/fjp.man
 out_file="$here"/fjp.1.gz
 
 rm -f fjp.1.gz fjp.man
-pandoc -f gfm -t man -s --strip-comments -o "$between_file" "$in_file" \
+/usr/bin/pandoc -f gfm -t man -s --strip-comments -o "$between_file" "$in_file" \
  -V date="$(LC_TIME=en_US date)" \
  -V footer="$(head -n3 "$here"/../Cargo.toml | tail -n1 | cut -d" " -f3)" \
  -V section=1 \

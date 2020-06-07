@@ -82,8 +82,7 @@ fn main() {
             return;
         }
     };
-    let mut zcomp =
-        BufWriter::new(File::create(Path::new(&out_dir).join("_fjp")).unwrap());
+    let mut zcomp = BufWriter::new(File::create(Path::new(&out_dir).join("_fjp")).unwrap());
     write!(zcomp, "{}", &ZCOMP_HEADER[1..ZCOMP_HEADER.len()]).unwrap();
     let mut sub_c_arm = None;
     for line in rzcomp.lines().skip(3) {

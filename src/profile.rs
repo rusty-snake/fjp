@@ -23,6 +23,7 @@
 #![allow(dead_code)] // Some methods are for future use, others are USED! (=false positive)
 
 use crate::{SYSTEM_PROFILE_DIR, USER_PROFILE_DIR};
+use anyhow::anyhow;
 use bitflags::bitflags;
 use lazy_static::lazy_static;
 use log::{debug, warn};
@@ -213,10 +214,16 @@ impl<'a> Profile<'a> {
     /// # Ok::<(), Box<dyn std::error::Error>>(())
     /// ```
     pub fn read(&mut self) -> io::Result<()> {
+        use io::{Error, ErrorKind};
         if let Some(ref path) = self.path {
-            self.raw_data = Some(read_to_string(path)?)
+            self.raw_data = Some(read_to_string(path)?);
+            Ok(())
+        } else {
+            Err(Error::new(
+                ErrorKind::NotFound,
+                anyhow!("This profile does not exists"),
+            ))
         }
-        Ok(())
     }
 
     /// Return true if the profile is readed (i.e. the data filed is not None), otherwise false.

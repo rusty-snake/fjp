@@ -228,7 +228,6 @@ case $ACTION in
     cargo build "${CARGO_ARGS[@]}"
     ./man/mkman.sh
     OUT_DIR=$(find_outdir)
-    ./patch_zsh_completion.sh "$OUT_DIR"/_fjp "$OUT_DIR"/_fjp.patched
   ;;
   clean)
     cargo clean
@@ -268,7 +267,7 @@ case $ACTION in
   install)
     OUT_DIR=$(find_outdir)
     install -Dm0755 target/release/fjp "$DESTDIR$bindir"/fjp
-    install -Dm0644 "$OUT_DIR"/_fjp.patched "$DESTDIR$datadir"/zsh/site-functions/_fjp
+    install -Dm0644 "$OUT_DIR"/_fjp "$DESTDIR$datadir"/zsh/site-functions/_fjp
     install -Dm0644 "$OUT_DIR"/fjp.bash "$DESTDIR$datadir"/bash-completion/completions/fjp
     install -Dm0644 "$OUT_DIR"/fjp.fish "$DESTDIR$datadir"/fish/completions/fjp.fish
     install -Dm0644 AUTHORS "$DESTDIR$docdir"/AUTHORS

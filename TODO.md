@@ -74,3 +74,8 @@ scan
 ----
 
 Scan for common mistakes and outdated options in ~/.config/firejail.
+
+gui
+---
+
+A gui for all of this.

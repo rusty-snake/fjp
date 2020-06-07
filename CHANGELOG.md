@@ -13,6 +13,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - make.sh: support striping binaries
 - make.sh: can build rpms
 
+### Changed
+- cat: no-globals in now default
+
 ## [0.1.0] - 2020-05-04
 ### Added
 - subcommands: cat, disable, edit, enable, has, rm

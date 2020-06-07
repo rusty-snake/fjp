@@ -25,9 +25,6 @@ subcommands:
   - cat:
       about: Show a profile, its .local and its redirect profile
       args:
-        - no-globals:
-            long: no-globals
-            help: Do not show globals.local.
         - no-locals:
             long: no-locals
             help: Do not show .local files.

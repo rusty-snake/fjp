@@ -31,7 +31,6 @@ use termcolor::Color;
 
 #[derive(Debug, Default)]
 struct Options {
-    show_globals: bool,
     show_locals: bool,
     show_redirects: bool,
 }
@@ -77,7 +76,6 @@ pub fn start(cli: &ArgMatches<'_>) {
     let profile = Profile { path, data };
 
     let opts = Options {
-        show_globals: !cli.is_present("no-globals"),
         show_locals: !cli.is_present("no-locals"),
         show_redirects: !cli.is_present("no-redirects"),
     };
@@ -150,10 +148,12 @@ fn show_file<W: io::Write>(profile: &Profile, output: &mut W) {
     output.write_all(profile.data.as_bytes()).unwrap();
 }
 
-fn show_locals<W: io::Write>(locals: &[String], opts: &Options, output: &mut W) {
+fn show_locals<W: io::Write>(locals: &[String], _opts: &Options, output: &mut W) {
     locals
         .iter()
-        .filter(|name| opts.show_globals || *name != "globals.local")
+        .filter(|&name| {
+            name != "globals.local" && name != "pre-globals.local" && name != "post-globals.local"
+        })
         .filter_map(|name| match find_profile(name) {
             Some(path) => Some(path),
             None => {

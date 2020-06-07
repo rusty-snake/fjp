@@ -23,7 +23,7 @@ trap cleanup EXIT
 
 sed "s/@VERSION@/$version/g" "$(dirname "$0")"/fjp.spec > "$specdir/fjp.spec"
 
-tar --exclude-vcs-ignore --create --gzip --file "$sourcedir/fjp-$version.tar.gz" .
+tar --exclude-vcs-ignore --exclude="./.git" --create --gzip --file "$sourcedir/fjp-$version.tar.gz" .
 
 rpmbuild --nodebuginfo --quiet --define "_topdir $topdir" -bb "$specdir"/fjp.spec
 

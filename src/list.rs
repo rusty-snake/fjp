@@ -17,7 +17,7 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-use crate::{USER_PROFILE_DIR, fatal};
+use crate::{fatal, USER_PROFILE_DIR};
 use clap::ArgMatches;
 use log::{debug, warn};
 use std::fs::read_dir;
@@ -40,10 +40,12 @@ pub fn start(_cli: &ArgMatches<'_>) {
     user_profiles.sort_unstable();
     print!(
         "{}",
-        user_profiles.into_iter().fold(String::new(), |mut acc, val| {
-            acc.push_str(val.to_str().unwrap());
-            acc.push('\n');
-            acc
-        })
+        user_profiles
+            .into_iter()
+            .fold(String::new(), |mut acc, val| {
+                acc.push_str(val.to_str().unwrap());
+                acc.push('\n');
+                acc
+            })
     );
 }

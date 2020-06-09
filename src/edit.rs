@@ -65,18 +65,21 @@ pub fn start(cli: &ArgMatches<'_>) {
 }
 
 fn prepare_tmp_edit(user_profile: &Path, system_profile: &Path, flags: Flags) {
-    let backup_profile = user_profile.with_extension(".bak");
+    let backup_profile = user_profile.with_extension("bak");
 
     if user_profile.exists() {
-        rename(user_profile, &backup_profile)
+        copy_file(user_profile, &backup_profile)
             .unwrap_or_else(|err| fatal!("backup creation failed: {}", err));
+        info!("creating backup");
         prepare_edit(user_profile, system_profile, flags);
         rename(&backup_profile, user_profile)
             .unwrap_or_else(|err| fatal!("failed to restore the profile: {}", err));
+        info!("restoring backup");
     } else {
         prepare_edit(user_profile, system_profile, flags);
         remove_file(user_profile)
             .unwrap_or_else(|err| fatal!("failed to remove the temporary profile: {}", err));
+        info!("removing profile");
     }
 }
 

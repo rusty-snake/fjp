@@ -80,6 +80,7 @@ subcommands:
         - tmp:
             long: tmp
             help: Edit non-persistent
+            long_help: Discard changes after editing.
         - PROFILE_NAME:
             index: 1
             required: true

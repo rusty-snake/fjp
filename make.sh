@@ -259,10 +259,14 @@ case $ACTION in
   gen-docs)
     #TODO: CARGO_ARGS+="--no-deps"
     cargo doc "${CARGO_ARGS[@]}"
+    doc_fjp_exitcode=$?
     cargo doc "${CARGO_ARGS[@]}" --package macros
-    echo "You can now read the docs by opening one of the urls below in your browser."
-    echo "  file://$PWD/target/doc/fjp/index.html"
-    echo "  file://$PWD/target/doc/macros/index.html"
+    doc_macros_exitcode=$?
+    if [[ $doc_fjp_exitcode -eq 0 && $doc_macros_exitcode -eq 0 ]]; then
+      echo "You can now read the docs by opening one of the urls below in your browser."
+      echo "  file://$PWD/target/doc/fjp/index.html"
+      echo "  file://$PWD/target/doc/macros/index.html"
+    fi
   ;;
   install)
     OUT_DIR=$(find_outdir)

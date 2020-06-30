@@ -21,6 +21,7 @@ use crate::utils::{find_profile, get_name1, ColoredText};
 use clap::ArgMatches;
 use log::debug;
 use termcolor::Color;
+use std::process::exit;
 
 pub fn start(cli: &ArgMatches<'_>) {
     debug!("subcommand: has");
@@ -33,7 +34,9 @@ pub fn start(cli: &ArgMatches<'_>) {
             profile_name,
             ColoredText::new(Color::Green, &profile.to_string_lossy())
         );
+        exit(0);
     } else {
         println!("Cloud not find a profile for {}.", profile_name);
+        exit(100);
     }
 }

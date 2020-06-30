@@ -15,9 +15,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - cat: no-globals in now default
-- edit --tmp: consistent behaviour: always startediting with the current profile.
+- edit --tmp: consistent behavior: always start editing with the current profile.
   Previously profiles were copied from /etc/firejail if they don't exists in ~/.config/firejail,
   and renamed if the exists (now they will be copied inside ~/.config/firejail).
+- has: exit with 100 if no profile could we found
 
 ## [0.1.0] - 2020-05-04
 ### Added

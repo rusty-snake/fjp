@@ -52,10 +52,12 @@ subcommands:
       about: Disable profiles
       args:
         - list:
+            short: l
             long: list
             conflicts_with: user
             help: List all disabled profiles
         - user:
+            short: u
             long: user
             conflicts_with: list
             help: Disable ~/.config/firejail
@@ -78,6 +80,7 @@ subcommands:
               Open the editor only if the profile exists in the user location.
               NOTE: Without --no-copy it is copied first.
         - tmp:
+            short: t
             long: tmp
             help: Edit non-persistent
             long_help: Discard changes after editing.
@@ -92,6 +95,7 @@ subcommands:
       about: Enable profiles
       args:
         - user:
+            short: u
             long: user
             help: Enable ~/.config/firejail
         - PROFILE_NAME:

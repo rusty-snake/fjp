@@ -1,8 +1,9 @@
 
  + more unit-tests for `utils`
- + Integration teste (possible crates: assert-cmd & assert-fs)
+ + Integration tests (possible crates: assert-cmd & assert-fs)
  + improve zsh-completion
  + user editable shortcuts
+ + rethink the syntax for profile::Profile::complete_name
 
 edit
 ----
@@ -35,6 +36,7 @@ check/lint
 
 Check synatx, blacklist, ….
 Lints for ordering/sorting, suggest options, check for inconsistents, ….
+check-blacklist
 
 trash
 -----
@@ -45,6 +47,16 @@ A trash for user-wide profiles (~/.config/firejail/trash).
  - `--list`
  - `--undo=PROFILE`
  - `--delete=PROFILE`
+
+mv
+--
+
+rename profiles
+
+cp
+--
+
+copy profiles
 
 generate-standalone
 -------------------
@@ -62,6 +74,9 @@ diff
 ----
 
  - Handel `include *.{local,profile}`
+ - implement some config-file support to set a default format for it
+ - show files side-by-side with `--format=color`
+ - format=color: `private-etc foo,bar`, `private-etc foo` should only highligt `,bar`
 
 merge
 -----

@@ -42,6 +42,19 @@ subcommands:
   - diff:
       about: Show the differences between two profiles
       args:
+        - format:
+            short: f
+            long: format
+            takes_value: true
+            possible_values:
+              - color
+              - simple
+            default_value: simple
+            help: specify the diff format
+            long_help: |
+              specify the diff format
+               color: highlight unique lines
+               simple: show unique lines
         - PROFILE_NAME1:
             index: 1
             required: true

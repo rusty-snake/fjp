@@ -25,6 +25,16 @@ use clap::ArgMatches;
 use termcolor::Color;
 
 pub fn start(cli: &ArgMatches<'_>) {
+    let [(profile1, profile1_stream), (profile2, profile2_stream)] = read_and_parse(cli);
+
+    match cli.value_of("format") {
+        Some("color") => format_color(&profile1, &profile2, &profile1_stream, &profile2_stream),
+        Some("simple") => format_simple(&profile1, &profile2, &profile1_stream, &profile2_stream),
+        _ => unreachable!(),
+    }
+}
+
+fn read_and_parse<'a>(cli: &'a ArgMatches<'a>) -> [(Profile<'a>, ProfileStream<'_>); 2] {
     let profile1_name = cli.value_of("PROFILE_NAME1").unwrap();
     let profile2_name = cli.value_of("PROFILE_NAME2").unwrap();
 
@@ -50,6 +60,50 @@ pub fn start(cli: &ArgMatches<'_>) {
         .parse::<ProfileStream>()
         .unwrap();
 
+    [(profile1, profile1_stream), (profile2, profile2_stream)]
+}
+
+fn format_color(
+    profile1: &Profile<'_>,
+    profile2: &Profile<'_>,
+    profile1_stream: &ProfileStream<'_>,
+    profile2_stream: &ProfileStream<'_>,
+) {
+    println!(
+        "{}\n{}\n{}\n{}",
+        ColoredText::new(
+            Color::Cyan,
+            format!("{}:", profile1.path().unwrap().to_string_lossy()),
+        ),
+        profile1_stream
+            .iter()
+            .map(|l| if profile2_stream.contains(l) {
+                l.to_string()
+            } else {
+                ColoredText::new(Color::Green, l.to_string()).into_string()
+            })
+            .collect::<String>(),
+        ColoredText::new(
+            Color::Cyan,
+            format!("{}:", profile2.path().unwrap().to_string_lossy()),
+        ),
+        profile2_stream
+            .iter()
+            .map(|l| if profile1_stream.contains(l) {
+                l.to_string()
+            } else {
+                ColoredText::new(Color::Green, l.to_string()).into_string()
+            })
+            .collect::<String>()
+    );
+}
+
+fn format_simple(
+    profile1: &Profile<'_>,
+    profile2: &Profile<'_>,
+    profile1_stream: &ProfileStream<'_>,
+    profile2_stream: &ProfileStream<'_>,
+) {
     let profile1_unique = profile1_stream
         .iter()
         .filter(|l| !l.is_comment())

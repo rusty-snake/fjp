@@ -22,7 +22,8 @@
 #![allow(clippy::cognitive_complexity)]
 #![allow(clippy::unreadable_literal)] // bitflags are easier to read without underscores!!
 
-use anyhow::bail;
+use crate::utils::join;
+use anyhow::{anyhow, bail};
 use bitflags::bitflags;
 use std::borrow::{Borrow, BorrowMut, Cow};
 use std::convert::TryFrom;
@@ -224,11 +225,16 @@ macro_rules! unwrap_or_invalid {
 #[non_exhaustive]
 #[derive(Clone, Debug, Hash, PartialEq, Eq)]
 pub enum ProfileEntry {
+    AllowDebuggers,
+    Allusers,
     Apparmor,
     Blacklist(String),
     /// A empty line
     Blank,
+    Caps,
     CapsDropAll,
+    CapsDrop(Vec<Capabilities>),
+    CapsKeep(Vec<Capabilities>),
     /// A comment (without the leading `#`)
     /// This variant might change in the future to something like `Comment(Comment::Foo(String))`
     Comment(String),
@@ -236,7 +242,10 @@ pub enum ProfileEntry {
     DBusUserOwn(String),
     DBusUserTalk(String),
     DBusSystem(DBusPolicy),
+    DBusSystemOwn(String),
+    DBusSystemTalk(String),
     DisableMnt,
+    Hostname(String),
     Ignore(String),
     Include(String),
     IpcNamespace,
@@ -245,11 +254,13 @@ pub enum ProfileEntry {
     MemoryDenyWriteExecute,
     Mkdir(String),
     Mkfile(String),
+    Name(String),
     Netfilter,
     NetNone,
     No3d,
     Noblacklist(String),
     Nodvd,
+    Noexec(String),
     Nogroups,
     Nonewprivs,
     Noroot,
@@ -257,23 +268,35 @@ pub enum ProfileEntry {
     Notv,
     Nou2f,
     Novideo,
+    Nowhitelist(String),
     /// `Private(None)`: `private`<br>
     /// `Private(Some(String::from("${HOME}/spam")))`: `private ${HOME}/spam`
     Private(Option<String>),
     PrivateBin(Vec<String>),
+    PrivateCache,
+    PrivateCwd(String),
     PrivateDev,
     PrivateEtc(Vec<String>),
+    PrivateLib(Option<Vec<String>>),
+    PrivateOpt(Vec<String>),
+    PrivateSrv(Vec<String>),
     PrivateTmp,
     Protocol(Protocols),
+    Quiet,
     ReadOnly(String),
     ReadWrite(String),
     /// `Seccomp(None)`: `seccomp`<br>
     /// `Seccomp(Some(vec!["!chroot".to_string()]))`: `seccomp !chroot`
     Seccomp(Option<Vec<String>>),
+    SeccompBlockSecondary,
+    SeccompDrop(Vec<String>),
     ShellNone,
     Tracelog,
     Whitelist(String),
     WritableRunUser,
+    WritableVar,
+    WritableVarLog,
+    X11None,
     /// An invalid line
     _Invalid(String),
     /// A unknow line, likely not implemented yet.
@@ -292,16 +315,24 @@ impl fmt::Display for ProfileEntry {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         use ProfileEntry::*;
         match self {
+            AllowDebuggers => writeln!(f, "allow-debuggers")?,
+            Allusers => writeln!(f, "allusers")?,
             Apparmor => writeln!(f, "apparmor")?,
             Blacklist(path) => writeln!(f, "blacklist {}", path)?,
             Blank => writeln!(f)?,
+            Caps => writeln!(f, "caps")?,
             CapsDropAll => writeln!(f, "caps.drop all")?,
+            CapsDrop(caps) => writeln!(f, "caps.drop {}", join(',', caps))?,
+            CapsKeep(caps) => writeln!(f, "caps.drop {}", join(',', caps))?,
             Comment(comment) => writeln!(f, "#{}", comment)?,
             DBusUser(policy) => writeln!(f, "dbus-user {}", policy)?,
             DBusUserOwn(name) => writeln!(f, "dbus-user.own {}", name)?,
             DBusUserTalk(name) => writeln!(f, "dbus-user.talk {}", name)?,
             DBusSystem(policy) => writeln!(f, "dbus-system {}", policy)?,
+            DBusSystemOwn(name) => writeln!(f, "dbus-system.own {}", name)?,
+            DBusSystemTalk(name) => writeln!(f, "dbus-system.talk {}", name)?,
             DisableMnt => writeln!(f, "disable-mnt")?,
+            Hostname(hostname) => writeln!(f, "hostname {}", hostname)?,
             Ignore(profile_line) => writeln!(f, "ignore {}", profile_line)?,
             Include(profile) => writeln!(f, "include {}", profile)?,
             IpcNamespace => writeln!(f, "ipc-namespace")?,
@@ -310,11 +341,13 @@ impl fmt::Display for ProfileEntry {
             MemoryDenyWriteExecute => writeln!(f, "memory-deny-write-execute")?,
             Mkdir(path) => writeln!(f, "mkdir {}", path)?,
             Mkfile(path) => writeln!(f, "mkfile {}", path)?,
+            Name(name) => writeln!(f, "name {}", name)?,
             Netfilter => writeln!(f, "netfilter")?,
             NetNone => writeln!(f, "net none")?,
             No3d => writeln!(f, "no3d")?,
             Noblacklist(path) => writeln!(f, "noblacklist {}", path)?,
             Nodvd => writeln!(f, "nodvd")?,
+            Noexec(path) => writeln!(f, "noexec {}", path)?,
             Nogroups => writeln!(f, "nogroups")?,
             Nonewprivs => writeln!(f, "nonewprivs")?,
             Noroot => writeln!(f, "noroot")?,
@@ -322,21 +355,34 @@ impl fmt::Display for ProfileEntry {
             Notv => writeln!(f, "notv")?,
             Nou2f => writeln!(f, "nou2f")?,
             Novideo => writeln!(f, "novideo")?,
+            Nowhitelist(path) => writeln!(f, "nowhitelist {}", path)?,
             Private(None) => writeln!(f, "private")?,
             Private(Some(path)) => writeln!(f, "private {}", path)?,
             PrivateBin(bins) => writeln!(f, "private-bin {}", bins.join(","))?,
+            PrivateCache => writeln!(f, "private-cache")?,
+            PrivateCwd(path) => writeln!(f, "private-cwd {}", path)?,
             PrivateDev => writeln!(f, "private-dev")?,
             PrivateEtc(files) => writeln!(f, "private-etc {}", files.join(","))?,
+            PrivateLib(None) => writeln!(f, "private-lib")?,
+            PrivateLib(Some(files)) => writeln!(f, "private-lib {}", files.join(","))?,
+            PrivateOpt(files) => writeln!(f, "private-opt {}", files.join(","))?,
+            PrivateSrv(files) => writeln!(f, "private-srv {}", files.join(","))?,
             PrivateTmp => writeln!(f, "private-tmp")?,
             Protocol(protocols) => writeln!(f, "protocol {}", protocols)?,
+            Quiet => writeln!(f, "quiet")?,
             ReadOnly(path) => writeln!(f, "read-only {}", path)?,
             ReadWrite(path) => writeln!(f, "read-write {}", path)?,
             Seccomp(None) => writeln!(f, "seccomp")?,
             Seccomp(Some(syscalls)) => writeln!(f, "seccomp {}", syscalls.join(","))?,
+            SeccompBlockSecondary => writeln!(f, "seccomp.block-secondary")?,
+            SeccompDrop(syscalls) => writeln!(f, "seccomp.drop {}", syscalls.join(","))?,
             ShellNone => writeln!(f, "shell none")?,
             Tracelog => writeln!(f, "tracelog")?,
             Whitelist(path) => writeln!(f, "whitelist {}", path)?,
             WritableRunUser => writeln!(f, "writable-run-user")?,
+            WritableVar => writeln!(f, "writable-var")?,
+            WritableVarLog => writeln!(f, "writable-var-log")?,
+            X11None => writeln!(f, "x11 none")?,
             _Invalid(_line) => unimplemented!(), // writeln!(f, "#INVALID!{}", line)?,
             _Unknow(profile_line) => writeln!(f, "{}", profile_line)?,
             //_ => unimplemented!(),
@@ -355,14 +401,30 @@ impl FromStr for ProfileEntry {
     fn from_str(line: &str) -> Result<Self, Self> {
         use ProfileEntry::*;
 
-        Ok(if line == "apparmor" {
+        Ok(if line == "allow-debuggers" {
+            AllowDebuggers
+        } else if line == "allusers" {
+            Allusers
+        } else if line == "apparmor" {
             Apparmor
         } else if line.starts_with("blacklist ") {
             Blacklist(line[10..].to_string())
         } else if line == "" {
             Blank
+        } else if line == "caps" {
+            Caps
         } else if line == "caps.drop all" {
             CapsDropAll
+        } else if line.starts_with("caps.drop ") {
+            CapsDrop(unwrap_or_invalid!(
+                line[10..].split(',').map(|s| s.parse()).collect(),
+                line
+            ))
+        } else if line.starts_with("caps.keep ") {
+            CapsKeep(unwrap_or_invalid!(
+                line[10..].split(',').map(|s| s.parse()).collect(),
+                line
+            ))
         } else if line.starts_with('#') {
             Comment(line[1..].to_string())
         } else if line == "dbus-user filter" {
@@ -377,8 +439,14 @@ impl FromStr for ProfileEntry {
             DBusSystem(DBusPolicy::Filter)
         } else if line == "dbus-system none" {
             DBusSystem(DBusPolicy::None)
+        } else if line.starts_with("dbus-system.own ") {
+            DBusSystemOwn(line[16..].to_string())
+        } else if line.starts_with("dbus-system.talk ") {
+            DBusSystemTalk(line[17..].to_string())
         } else if line == "disable-mnt" {
             DisableMnt
+        } else if line.starts_with("hostname ") {
+            Hostname(line[9..].to_string())
         } else if line.starts_with("ignore ") {
             Ignore(line[7..].to_string())
         } else if line.starts_with("include ") {
@@ -395,6 +463,8 @@ impl FromStr for ProfileEntry {
             Mkdir(line[6..].to_string())
         } else if line.starts_with("mkfile ") {
             Mkfile(line[7..].to_string())
+        } else if line.starts_with("name ") {
+            Name(line[5..].to_string())
         } else if line == "netfilter" {
             Netfilter
         } else if line == "net none" {
@@ -405,6 +475,8 @@ impl FromStr for ProfileEntry {
             Noblacklist(line[12..].to_string())
         } else if line == "nodvd" {
             Nodvd
+        } else if line.starts_with("noexec ") {
+            Noexec(line[7..].to_string())
         } else if line == "nogroups" {
             Nogroups
         } else if line == "nonewprivs" {
@@ -419,16 +491,30 @@ impl FromStr for ProfileEntry {
             Nou2f
         } else if line == "novideo" {
             Novideo
+        } else if line.starts_with("nowhitelist ") {
+            Nowhitelist(line[12..].to_string())
         } else if line == "private" {
             Private(None)
         } else if line.starts_with("private ") {
             Private(Some(line[8..].to_string()))
         } else if line.starts_with("private-bin ") {
             PrivateBin(line[12..].split(',').map(String::from).collect())
+        } else if line == "private-cache" {
+            PrivateCache
+        } else if line.starts_with("private-cwd ") {
+            PrivateCwd(line[12..].to_string())
         } else if line == "private-dev" {
             PrivateDev
         } else if line.starts_with("private-etc ") {
             PrivateEtc(line[12..].split(',').map(String::from).collect())
+        } else if line == "private-lib" {
+            PrivateLib(None)
+        } else if line.starts_with("private-lib ") {
+            PrivateLib(Some(line[12..].split(',').map(String::from).collect()))
+        } else if line.starts_with("private-opt ") {
+            PrivateOpt(line[12..].split(',').map(String::from).collect())
+        } else if line.starts_with("private-srv ") {
+            PrivateSrv(line[12..].split(',').map(String::from).collect())
         } else if line == "private-tmp" {
             PrivateTmp
         } else if line.starts_with("protocol ") {
@@ -436,6 +522,8 @@ impl FromStr for ProfileEntry {
                 Protocols::try_from(&*line[9..].split(',').collect::<Vec<_>>()),
                 line
             ))
+        } else if line == "quiet" {
+            Quiet
         } else if line.starts_with("read-only ") {
             ReadOnly(line[12..].to_string())
         } else if line.starts_with("read-write ") {
@@ -444,6 +532,10 @@ impl FromStr for ProfileEntry {
             Seccomp(None)
         } else if line.starts_with("seccomp ") {
             Seccomp(Some(line[8..].split(',').map(String::from).collect()))
+        } else if line == "seccomp.block-secondary" {
+            SeccompBlockSecondary
+        } else if line.starts_with("seccomp.drop ") {
+            SeccompDrop(line[13..].split(',').map(String::from).collect())
         } else if line == "shell none" {
             ShellNone
         } else if line == "tracelog" {
@@ -452,6 +544,12 @@ impl FromStr for ProfileEntry {
             Whitelist(line[10..].to_string())
         } else if line == "writable-run-user" {
             WritableRunUser
+        } else if line == "writable-var" {
+            WritableVar
+        } else if line == "writable-var-log" {
+            WritableVarLog
+        } else if line == "x11 none" {
+            X11None
         } else {
             _Unknow(line.to_string())
         })
@@ -482,6 +580,8 @@ impl Borrow<ProfileEntry> for CowArcProfileEntry<'_> {
 
 bitflags! {
     /// Protocols from firejails `protocol` option
+    ///
+    /// This type does not preserve the ordering and will be replaced.
     pub struct Protocols: u8 {
         const UNIX    = 0b00000001;
         const INET    = 0b00000010;
@@ -597,6 +697,146 @@ impl fmt::Display for Protocols {
                 unreachable!();
             }
         )
+    }
+}
+
+//
+// Capabilities
+//
+
+#[derive(Copy, Clone, Debug, Eq, Hash, PartialEq)]
+pub enum Capabilities {
+    AuditControl,
+    AuditRead,
+    AuditWrite,
+    BlockSuspend,
+    Chown,
+    DacOverride,
+    DacReadSearch,
+    Fowner,
+    Fsetid,
+    IpcLock,
+    IpcOwner,
+    Kill,
+    Lease,
+    LinuxImmutable,
+    MacAdmin,
+    MacOverride,
+    Mknod,
+    NetAdmin,
+    NetBindService,
+    NetBroadcast,
+    NetRaw,
+    Setfcap,
+    Setgid,
+    Setpcap,
+    Setuid,
+    SysAdmin,
+    SysBoot,
+    SysChroot,
+    SysModule,
+    SysNice,
+    SysPacct,
+    SysPtrace,
+    SysRawio,
+    SysResource,
+    SysTime,
+    SysTtyConfig,
+    Syslog,
+    WakeAlarm,
+}
+impl fmt::Display for Capabilities {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        use Capabilities::*;
+        match self {
+            AuditControl => write!(f, "audit_control")?,
+            AuditRead => write!(f, "audit_read")?,
+            AuditWrite => write!(f, "audit_write")?,
+            BlockSuspend => write!(f, "block_suspend")?,
+            Chown => write!(f, "chown")?,
+            DacOverride => write!(f, "dac_override")?,
+            DacReadSearch => write!(f, "dac_read_search")?,
+            Fowner => write!(f, "fowner")?,
+            Fsetid => write!(f, "fsetid")?,
+            IpcLock => write!(f, "ipc_lock")?,
+            IpcOwner => write!(f, "ipc_owner")?,
+            Kill => write!(f, "kill")?,
+            Lease => write!(f, "lease")?,
+            LinuxImmutable => write!(f, "linux_immutable")?,
+            MacAdmin => write!(f, "mac_admin")?,
+            MacOverride => write!(f, "mac_override")?,
+            Mknod => write!(f, "mknod")?,
+            NetAdmin => write!(f, "net_admin")?,
+            NetBindService => write!(f, "net_bind_service")?,
+            NetBroadcast => write!(f, "net_broadcast")?,
+            NetRaw => write!(f, "net_raw")?,
+            Setfcap => write!(f, "setfcap")?,
+            Setgid => write!(f, "setgid")?,
+            Setpcap => write!(f, "setpcap")?,
+            Setuid => write!(f, "setuid")?,
+            SysAdmin => write!(f, "sys_admin")?,
+            SysBoot => write!(f, "sys_boot")?,
+            SysChroot => write!(f, "sys_chroot")?,
+            SysModule => write!(f, "sys_module")?,
+            SysNice => write!(f, "sys_nice")?,
+            SysPacct => write!(f, "sys_pacct")?,
+            SysPtrace => write!(f, "sys_ptrace")?,
+            SysRawio => write!(f, "sys_rawio")?,
+            SysResource => write!(f, "sys_resource")?,
+            SysTime => write!(f, "sys_time")?,
+            SysTtyConfig => write!(f, "sys_tty_config")?,
+            Syslog => write!(f, "syslog")?,
+            WakeAlarm => write!(f, "wake_alarm")?,
+        }
+        Ok(())
+    }
+}
+impl FromStr for Capabilities {
+    type Err = anyhow::Error;
+
+    fn from_str(s: &str) -> Result<Self, anyhow::Error> {
+        use Capabilities::*;
+        match s {
+            "audit_control" => Ok(AuditControl),
+            "audit_read" => Ok(AuditRead),
+            "audit_write" => Ok(AuditWrite),
+            "block_suspend" => Ok(BlockSuspend),
+            "chown" => Ok(Chown),
+            "dac_override" => Ok(DacOverride),
+            "dac_read_search" => Ok(DacReadSearch),
+            "fowner" => Ok(Fowner),
+            "fsetid" => Ok(Fsetid),
+            "ipc_lock" => Ok(IpcLock),
+            "ipc_owner" => Ok(IpcOwner),
+            "kill" => Ok(Kill),
+            "lease" => Ok(Lease),
+            "linux_immutable" => Ok(LinuxImmutable),
+            "mac_admin" => Ok(MacAdmin),
+            "mac_override" => Ok(MacOverride),
+            "mknod" => Ok(Mknod),
+            "net_admin" => Ok(NetAdmin),
+            "net_bind_service" => Ok(NetBindService),
+            "net_broadcast" => Ok(NetBroadcast),
+            "net_raw" => Ok(NetRaw),
+            "setfcap" => Ok(Setfcap),
+            "setgid" => Ok(Setgid),
+            "setpcap" => Ok(Setpcap),
+            "setuid" => Ok(Setuid),
+            "sys_admin" => Ok(SysAdmin),
+            "sys_boot" => Ok(SysBoot),
+            "sys_chroot" => Ok(SysChroot),
+            "sys_module" => Ok(SysModule),
+            "sys_nice" => Ok(SysNice),
+            "sys_pacct" => Ok(SysPacct),
+            "sys_ptrace" => Ok(SysPtrace),
+            "sys_rawio" => Ok(SysRawio),
+            "sys_resource" => Ok(SysResource),
+            "sys_time" => Ok(SysTime),
+            "sys_tty_config" => Ok(SysTtyConfig),
+            "syslog" => Ok(Syslog),
+            "wake_alarm" => Ok(WakeAlarm),
+            _ => Err(anyhow!("Unknow cap: {}", s)),
+        }
     }
 }
 

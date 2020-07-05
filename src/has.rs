@@ -20,8 +20,8 @@
 use crate::utils::{find_profile, get_name1, ColoredText};
 use clap::ArgMatches;
 use log::debug;
-use termcolor::Color;
 use std::process::exit;
+use termcolor::Color;
 
 pub fn start(cli: &ArgMatches<'_>) {
     debug!("subcommand: has");

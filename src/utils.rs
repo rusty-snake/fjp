@@ -126,6 +126,33 @@ pub fn home_dir() -> Option<path::PathBuf> {
         .map(PathBuf::from)
 }
 
+/// Flatten a iterable into a String,
+/// placing the string representaion of `sep` between.
+///
+/// # Examples
+///
+/// ```
+/// assert_eq!(
+///     join(",", vec![1, 2, 3]),
+///     "1,2,3",
+/// );
+/// assert_eq!(
+///     join('-', &["foo", "bar"]),
+///     "foo-bar",
+/// );
+/// ```
+pub fn join<T, U, I>(sep: T, iterable: I) -> String
+where
+    T: ToString,
+    U: ToString,
+    I: IntoIterator<Item = U>,
+{
+    let sep = sep.to_string();
+    iterable
+        .into_iter()
+        .fold("".to_string(), |acc, item| acc + &item.to_string() + &sep)
+}
+
 //
 // ColoredText
 //

@@ -22,11 +22,9 @@
 #![allow(clippy::cognitive_complexity)]
 #![allow(clippy::unreadable_literal)] // bitflags are easier to read without underscores!!
 
-use crate::utils::join;
-use anyhow::{anyhow, bail};
-use bitflags::bitflags;
+use crate::utils::{join, IteratorExt};
+use anyhow::anyhow;
 use std::borrow::{Borrow, BorrowMut, Cow};
-use std::convert::TryFrom;
 use std::fmt;
 use std::iter::FromIterator;
 use std::slice;
@@ -281,7 +279,7 @@ pub enum ProfileEntry {
     PrivateOpt(Vec<String>),
     PrivateSrv(Vec<String>),
     PrivateTmp,
-    Protocol(Protocols),
+    Protocol(Vec<Protocol>),
     Quiet,
     ReadOnly(String),
     ReadWrite(String),
@@ -368,7 +366,7 @@ impl fmt::Display for ProfileEntry {
             PrivateOpt(files) => writeln!(f, "private-opt {}", files.join(","))?,
             PrivateSrv(files) => writeln!(f, "private-srv {}", files.join(","))?,
             PrivateTmp => writeln!(f, "private-tmp")?,
-            Protocol(protocols) => writeln!(f, "protocol {}", protocols)?,
+            Protocol(protocols) => writeln!(f, "protocol {}", join(",", protocols))?,
             Quiet => writeln!(f, "quiet")?,
             ReadOnly(path) => writeln!(f, "read-only {}", path)?,
             ReadWrite(path) => writeln!(f, "read-write {}", path)?,
@@ -519,7 +517,10 @@ impl FromStr for ProfileEntry {
             PrivateTmp
         } else if line.starts_with("protocol ") {
             Protocol(unwrap_or_invalid!(
-                Protocols::try_from(&*line[9..].split(',').collect::<Vec<_>>()),
+                line[9..]
+                    .split(',')
+                    .map(FromStr::from_str)
+                    .collect_results_to_vec(),
                 line
             ))
         } else if line == "quiet" {
@@ -575,127 +576,65 @@ impl Borrow<ProfileEntry> for CowArcProfileEntry<'_> {
 }
 
 //
-// Protocols
+// Protocol
 //
 
-bitflags! {
-    /// Protocols from firejails `protocol` option
-    ///
-    /// This type does not preserve the ordering and will be replaced.
-    pub struct Protocols: u8 {
-        const UNIX    = 0b00000001;
-        const INET    = 0b00000010;
-        const INET6   = 0b00000100;
-        const NETLINK = 0b00001000;
-        const PACKET  = 0b00010000;
-    }
+/// A `Protocol` from firejails `protocol` command
+// TODO: PartialOrd
+#[derive(Copy, Clone, Debug, Eq, Hash, PartialEq)]
+pub enum Protocol {
+    Unix,
+    Inet,
+    Inet6,
+    Netlink,
+    Packet,
 }
-/// Create a new `Protocols` instance from a slice of `str`s
+/// Create a new `Protocol` instance from `str`
 ///
 /// # Examples
 ///
 /// ```
-/// # use std::convert::TryFrom;
 /// assert_eq!(
-///     Protocols::try_from(&["unix", "inet", "inet6"])?,
-///     Protocols::UNIX | Protocols::INET | Protocols::INET6,
+///     Protocol::from_str("unix")?,
+///     Protocol::Unix,
 /// );
 /// ```
 ///
 /// ```should_panic
-/// # use std::convert::TryFrom;
-/// Protocols::try_from(&["invalid"]).unwrap(); // This will fail!
+/// "invalid".parse::<Protocol>().unwrap(); // This will fail!
 /// ```
-impl TryFrom<&[&str]> for Protocols {
-    type Error = anyhow::Error;
+impl FromStr for Protocol {
+    type Err = anyhow::Error;
 
-    /// Performs the conversion.
+    /// Parses a str to a Protocol
     ///
     /// # Errors
     ///
     /// `anyhow::anyhow!("This is not a valid protocol")`
-    fn try_from(protos: &[&str]) -> Result<Self, anyhow::Error> {
-        let mut protocols = Self::empty();
-        for proto in protos {
-            protocols.insert(match *proto {
-                "unix" => Self::UNIX,
-                "inet" => Self::INET,
-                "inet6" => Self::INET6,
-                "netlink" => Self::NETLINK,
-                "packet" => Self::PACKET,
-                _ => bail!("This is not a valid protocol"),
-            });
+    fn from_str(proto: &str) -> Result<Self, anyhow::Error> {
+        match proto {
+            "unix" => Ok(Self::Unix),
+            "inet" => Ok(Self::Inet),
+            "inet6" => Ok(Self::Inet6),
+            "netlink" => Ok(Self::Netlink),
+            "packet" => Ok(Self::Packet),
+            _ => Err(anyhow!("This is not a valid protocol")),
         }
-        Ok(protocols)
     }
 }
-impl fmt::Display for Protocols {
+impl fmt::Display for Protocol {
     #[rustfmt::skip]
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         writeln!(
             f,
             "{}",
-            if self.is_empty() {
-                panic!();
-            } else if *self == Self::UNIX {
-                "protocol unix"
-            } else if *self == Self::UNIX | Self::INET {
-                "protocol unix,inet"
-            } else if *self == Self::UNIX | Self::INET | Self::INET6 {
-                "protocol unix,inet,inet6"
-            } else if *self == Self::UNIX | Self::INET | Self::INET6 | Self::NETLINK {
-                "protocol unix,inet,inet6,netlink"
-            } else if *self == Self::UNIX | Self::INET | Self::INET6 | Self::NETLINK | Self::PACKET {
-                "protocol unix,inet,inet6,netlink,packet"
-            } else if *self == Self::UNIX | Self::INET | Self::INET6 | Self::PACKET {
-                "protocol unix,inet,inet6,packet"
-            } else if *self == Self::UNIX | Self::INET | Self::NETLINK {
-                "protocol unix,inet,netlink"
-            } else if *self == Self::UNIX | Self::INET | Self::NETLINK | Self::PACKET {
-                "protocol unix,inet,netlink,packet"
-            } else if *self == Self::UNIX | Self::INET | Self::PACKET {
-                "protocol unix,inet,packet"
-            } else if *self == Self::UNIX | Self::INET6 {
-                "protocol unix,inet6"
-            } else if *self == Self::UNIX | Self::INET6 | Self::NETLINK {
-                "protocol unix,inet6,netlink"
-            } else if *self == Self::UNIX | Self::INET6 | Self::NETLINK | Self::PACKET {
-                "protocol unix,inet6,netlink,packet"
-            } else if *self == Self::UNIX | Self::INET6 | Self::PACKET {
-                "protocol unix,inet6,packet"
-            } else if *self == Self::UNIX | Self::NETLINK {
-                "protocol unix,netlink"
-            } else if *self == Self::UNIX | Self::NETLINK | Self::PACKET {
-                "protocol unix,netlink,packet"
-            } else if *self == Self::UNIX | Self::PACKET {
-                "protocol unix,packet"
-            } else if *self == Self::INET {
-                "protocol inet"
-            } else if *self == Self::INET | Self::INET6 {
-                "protocol inet,inet6"
-            } else if *self == Self::INET | Self::INET6 | Self::NETLINK {
-                "protocol inet,inet6,netlink"
-            } else if *self == Self::INET | Self::INET6 | Self::NETLINK | Self::PACKET {
-                "protocol inet,inet6,netlink,packet"
-            } else if *self == Self::INET | Self::INET6 | Self::PACKET {
-                "protocol inet,inet6,packet"
-            } else if *self == Self::INET6 {
-                "protocol inet6"
-            } else if *self == Self::INET6 | Self::NETLINK {
-                "protocol inet6,netlink"
-            } else if *self == Self::INET6 | Self::NETLINK | Self::PACKET {
-                "protocol inet6,netlink,packet"
-            } else if *self == Self::INET6 | Self::PACKET {
-                "protocol inet6,packet"
-            } else if *self == Self::NETLINK {
-                "protocol netlink"
-            } else if *self == Self::NETLINK | Self::PACKET {
-                "protocol netlink,packet"
-            } else if *self == Self::PACKET {
-                "protocol packet"
-            } else {
-                unreachable!();
-            }
+            match self {
+                Self::Unix => "unix",
+                Self::Inet => "inet",
+                Self::Inet6 => "inet6",
+                Self::Netlink => "netlink",
+                Self::Packet => "packet",
+            },
         )
     }
 }

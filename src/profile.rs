@@ -98,6 +98,8 @@ impl Default for NewProfileFlags {
 #[derive(Clone, Debug, Default, Eq, PartialEq)]
 pub struct Profile<'a> {
     /// The raw name of the profile, passed to [`new`]
+    ///
+    /// [`new`]: #method.new
     raw_name: Cow<'a, str>,
     /// The completed name of the profile, maybe equal to raw_name
     full_name: Cow<'a, str>,

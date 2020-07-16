@@ -38,6 +38,11 @@ Check synatx, blacklist, ….
 Lints for ordering/sorting, suggest options, check for inconsistents, ….
 check-blacklist
 
+fix
+---
+
+fix some auto-fixable lints
+
 trash
 -----
 

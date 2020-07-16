@@ -19,8 +19,8 @@
 
 use crate::{
     disable::DISABLED_DIR,
-    profile_path,
-    utils::{get_name1, input},
+    profile::{NewProfileFlags, Profile},
+    utils::input,
     USER_PROFILE_DIR,
 };
 use clap::ArgMatches;
@@ -34,7 +34,13 @@ pub fn start(cli: &ArgMatches<'_>) {
         enable_user();
     } else {
         let profile_name = cli.value_of("PROFILE_NAME").unwrap();
-        enable_profile(&get_name1(profile_name));
+        enable_profile(
+            &Profile::new(
+                profile_name,
+                NewProfileFlags::LOOKUP_USER | NewProfileFlags::DENY_BY_PATH,
+            )
+            .unwrap(),
+        );
     }
 }
 
@@ -49,15 +55,21 @@ fn enable_user() {
         .unwrap_or_else(|err| error!("Rename failed: {}", err));
 }
 
-fn enable_profile(profile: &str) {
-    let disabled_profile = DISABLED_DIR.get_profile_path(profile);
+fn enable_profile(profile: &Profile) {
+    let disabled_profile = DISABLED_DIR.get_profile_path(profile.full_name());
     debug!("disabled profile: {}", disabled_profile.to_string_lossy());
 
-    let enabled_profile = profile_path!(USER / profile);
+    let enabled_profile;
+    if let Some(path) = profile.path() {
+        enabled_profile = path;
+    } else {
+        error!("{} is not disabled.", profile.full_name());
+        return;
+    }
     debug!("enabled profile: {}", enabled_profile.to_string_lossy());
 
     if enabled_profile.exists() {
-        warn!("Profile '{}' is alread enabled.", profile);
+        warn!("Profile '{}' is alread enabled.", profile.full_name());
         if input("Override? [Y/n] ").unwrap() != "y" {
             info!("Skipping");
             return;

@@ -19,8 +19,8 @@
 
 use crate::{
     location::Location,
-    profile_path,
-    utils::{get_name1, input},
+    profile::{NewProfileFlags, Profile},
+    utils::input,
     USER_PROFILE_DIR,
 };
 use clap::ArgMatches;
@@ -49,7 +49,13 @@ pub fn start(cli: &ArgMatches<'_>) {
         list().unwrap_or_else(|e| error!("An error occured while listing: {}", e));
     } else {
         let profile_name = cli.value_of("PROFILE_NAME").unwrap();
-        disable_profile(&get_name1(profile_name));
+        disable_profile(
+            &Profile::new(
+                profile_name,
+                NewProfileFlags::LOOKUP_USER | NewProfileFlags::DENY_BY_PATH,
+            )
+            .unwrap(),
+        );
     }
 }
 
@@ -72,20 +78,24 @@ fn list() -> IoResult<()> {
     Ok(())
 }
 
-fn disable_profile(profile: &str) {
-    let enabled_profile = profile_path!(USER / profile);
-    debug!("enabled profile: {}", enabled_profile.to_string_lossy());
-
-    if !enabled_profile.exists() {
-        error!("Profile '{}' does not exists.", profile);
+fn disable_profile(profile: &Profile) {
+    let enabled_profile;
+    if let Some(path) = profile.path() {
+        enabled_profile = path;
+    } else {
+        error!(
+            "Could not find '{}' in ~/.config/firejail",
+            profile.full_name()
+        );
         return;
     }
+    debug!("enabled profile: {}", enabled_profile.to_string_lossy());
 
-    let disabled_profile = DISABLED_DIR.get_profile_path(profile);
+    let disabled_profile = DISABLED_DIR.get_profile_path(profile.full_name());
     debug!("disabled profile: {}", disabled_profile.to_string_lossy());
 
     if disabled_profile.exists() {
-        warn!("Profile '{}' is alread disabled.", profile);
+        warn!("Profile '{}' is alread disabled.", profile.full_name());
         if input("Override? [Y/n] ").unwrap() != "y" {
             info!("Skipping");
             return;

@@ -122,7 +122,7 @@ fn format_simple(
         ColoredText::new(
             Color::Cyan,
             format!(
-                "The following options are unique to {}:",
+                "The following commands are unique to {}:",
                 profile1.full_name()
             ),
         ),
@@ -130,7 +130,7 @@ fn format_simple(
         ColoredText::new(
             Color::Cyan,
             format!(
-                "The following options are unique to {}:",
+                "The following commands are unique to {}:",
                 profile2.full_name()
             ),
         ),

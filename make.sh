@@ -217,7 +217,7 @@ case $ACTION in
     sudo ./make.sh install
   ;;
   build)
-    if [ -e .git ]; then
+    if [[ ! -v FJP_COMMIT && -e .git ]]; then
       FJP_COMMIT=$(git rev-parse --short HEAD --)
       if ! git diff-index --quiet HEAD --; then
         FJP_COMMIT="$FJP_COMMIT-dirty"
@@ -282,6 +282,12 @@ case $ACTION in
     install -Dm0644 man/fjp.1.gz "$DESTDIR$mandir"/man1/fjp.1.gz
   ;;
   rpm)
+    FJP_COMMIT=$(git rev-parse --short HEAD --)
+    if ! git diff-index --quiet HEAD --; then
+      FJP_COMMIT="$FJP_COMMIT-dirty"
+    fi
+    FJP_VERSION=$(get_fjp_version)
+    export FJP_COMMIT FJP_VERSION
     ./platform/fedora/mkrpm.sh "$version"
   ;;
   strip)

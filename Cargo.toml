@@ -21,6 +21,7 @@ bitflags = "1.2"
 lazy_static = "1"
 log = "0.4"
 termcolor = "1.1"
+nix = "0.17.0"
 
 [dependencies.clap]
 version = "2"

@@ -22,7 +22,8 @@
 #![allow(dead_code)] // This module acts more like a library, so not yet used is ok.
 
 use log::debug;
-use std::env;
+use nix::unistd::{Uid, User};
+use std::ffi::OsString;
 use std::fmt;
 use std::io;
 use std::io::prelude::*;
@@ -111,19 +112,18 @@ pub fn get_name1(raw: &str) -> String {
     }
 }
 
-/// Get the users home directory
-///
-/// _ATM this only checks $HOME. TODO: `getpw*` fallback_
-///
-/// It returns `None` if $HOME is not set or empty,
-/// otherwise it returns `Some(PathBuf::from($HOME))`.
+/// Gets the current User's Directory
+/// return `Option<PathBuf::from(current_user.dir)>`
+/// Avoids Reading the $HOME env::var.
+/// Instead uses getpwnam_r syscall to get User directory.
 pub fn home_dir() -> Option<path::PathBuf> {
-    use env::var_os;
-    use path::PathBuf;
-
-    var_os("HOME")
-        .and_then(|h| if h.is_empty() { None } else { Some(h) })
-        .map(PathBuf::from)
+    let user = User::from_uid(Uid::current()).unwrap().unwrap();
+    let dir = OsString::from(user.dir);
+    if dir.len() > 0 {
+        Some(path::PathBuf::from(dir))
+    } else {
+        None
+    }
 }
 
 /// Flatten a iterable into a String,
@@ -253,25 +253,21 @@ impl<T: ?Sized> IteratorExt for T where T: Iterator {}
 #[cfg(test)]
 mod tests {
     use super::*;
-
     #[test]
     fn test_home_dir() {
-        env::set_var("HOME", "/home/github");
-        assert_eq!(home_dir(), Some(path::PathBuf::from("/home/github")));
+        assert_eq!(
+            home_dir(),
+            Some(path::PathBuf::from(OsString::from(
+                User::from_uid(Uid::current()).unwrap().unwrap().dir,
+            )))
+        );
     }
-
     #[test]
-    fn test_home_dir_empty() {
-        env::set_var("HOME", "");
-        assert_eq!(home_dir(), None);
+    fn test_home_dir_user_without_dir() {
+        // Emulate a user without home dir e.g postgres
+        // For next Pull request.
+        assert_ne!(home_dir(), None);
     }
-
-    #[test]
-    fn test_home_dir_unset() {
-        env::remove_var("HOME");
-        assert_eq!(home_dir(), None);
-    }
-
     #[test]
     fn test_get_name1() {
         assert_eq!(get_name1("firefox"), "firefox.profile");

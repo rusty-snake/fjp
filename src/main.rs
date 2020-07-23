@@ -54,7 +54,7 @@ lazy_static! {
     static ref USER_PROFILE_DIR: Location = {
         Location::from(
             home_dir()
-                .expect("Can not get user home dir. Is $HOME set?")
+                .expect("Can not get User's home dir.")
                 .join(".config/firejail/"),
         )
     };

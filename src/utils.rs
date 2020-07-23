@@ -257,6 +257,8 @@ mod tests {
     use super::*;
     #[test]
     fn test_home_dir() {
+        use ffi::OsString;
+        use unistd::{Uid, User};
         assert_eq!(
             home_dir(),
             Some(path::PathBuf::from(OsString::from(

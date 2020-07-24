@@ -23,7 +23,6 @@
 
 use log::debug;
 use nix::unistd;
-use std::ffi;
 use std::fmt;
 use std::io;
 use std::io::prelude::*;
@@ -114,17 +113,14 @@ pub fn get_name1(raw: &str) -> String {
 
 /// Gets the current User's Directory
 /// return `Option<PathBuf::from(current_user.dir)>`
-/// Avoids Reading the $HOME env::var.
-/// Instead uses getpwnam_r to get User directory.
+/// Uses getpwuid_r to get User directory.
 pub fn home_dir() -> Option<path::PathBuf> {
-    use ffi::OsString;
     use unistd::{Uid, User};
     let user = User::from_uid(Uid::current()).unwrap().unwrap();
-    let dir = OsString::from(user.dir);
-    if dir.len() > 0 {
-        Some(path::PathBuf::from(dir))
-    } else {
+    if user.dir.as_os_str().is_empty() {
         None
+    } else {
+        Some(path::PathBuf::from(user.dir))
     }
 }
 
@@ -257,13 +253,10 @@ mod tests {
     use super::*;
     #[test]
     fn test_home_dir() {
-        use ffi::OsString;
         use unistd::{Uid, User};
         assert_eq!(
             home_dir(),
-            Some(path::PathBuf::from(OsString::from(
-                User::from_uid(Uid::current()).unwrap().unwrap().dir,
-            )))
+            Some(User::from_uid(Uid::current()).unwrap().unwrap().dir)
         );
     }
     #[test]

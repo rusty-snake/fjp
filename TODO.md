@@ -4,12 +4,13 @@
  + improve zsh-completion
  + user editable shortcuts
  + rethink the syntax for profile::Profile::complete_name
+ + Rewrite the manpage using roff (https://www.cyberciti.biz/faq/linux-unix-creating-a-manpage/)
 
 edit
 ----
 
  - warn/reject `edit abc.local` if no `include abc.local` in `abc.profile`
- - shortcuts (ax, globals, pre-globals, post-globals)
+ - shortcuts (globals, pre-globals, post-globals)
 
 cat
 ---
@@ -66,9 +67,19 @@ copy profiles
 generate-standalone
 -------------------
 
-Copy all include profile in a profile.
-
- - keep `include *.inc` option
+ - `-o OUTPUT_FILE`
+ - `--keep-locals`
+ - Add notes e.g.
+```
+#
+# Beginn firefox.local
+#
+blacklist ${HOME}/Downloads/NotForFirefox
+#
+# End firefox.local
+#
+…
+```
 
 build
 -----

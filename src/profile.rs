@@ -23,13 +23,15 @@
 #![allow(dead_code)] // Some methods are for future use, others are USED! (=false positive)
 
 use crate::{SYSTEM_PROFILE_DIR, USER_PROFILE_DIR};
-use anyhow::anyhow;
+use anyhow::{anyhow, Context};
 use bitflags::bitflags;
 use lazy_static::lazy_static;
 use log::{debug, warn};
 use std::borrow::Cow;
 use std::collections::HashMap;
+use std::error::Error as StdError;
 use std::ffi::OsStr;
+use std::fmt::{Display, Formatter, Result as FmtResult};
 use std::fs::{read_dir, read_to_string};
 use std::io;
 use std::path::{Path, PathBuf};
@@ -123,6 +125,7 @@ impl<'a> Profile<'a> {
     /// # Errors
     ///
     /// This function can ATM only return an error if `NewProfileFlags::READ` was give.
+    /// This error can be downcasted to `std::io::Error` or [`ErrorContext`].
     ///
     /// # Panics
     ///
@@ -139,6 +142,8 @@ impl<'a> Profile<'a> {
     ///     NewProfileFlags::default_with(NewProfileFlags::READ),
     /// )?;
     /// ```
+    ///
+    /// [`ErrorContext`]: struct.ErrorContext.html
     pub fn new(name: &'a str, flags: NewProfileFlags) -> anyhow::Result<Self> {
         let raw_name = Cow::Borrowed(name);
         let full_name = Self::complete_name(name);
@@ -148,11 +153,11 @@ impl<'a> Profile<'a> {
         let path;
         if name.contains('/') {
             if flags.contains(NewProfileFlags::DENY_BY_PATH) {
-                path = None
+                path = None;
             } else if Path::new(name).exists() {
-                path = Some(PathBuf::from(name))
+                path = Some(PathBuf::from(name));
             } else {
-                path = None
+                path = None;
             }
         } else {
             path = Self::lookup_profile(OsStr::new(&*full_name), flags);
@@ -174,7 +179,10 @@ impl<'a> Profile<'a> {
         };
 
         if flags.contains(NewProfileFlags::READ) {
-            new_profile.read()?;
+            let res = new_profile.read();
+            if let Err(err) = res {
+                return Err(anyhow::Error::new(err).context(ErrorContext::from(new_profile)));
+            }
         }
 
         Ok(new_profile)
@@ -334,5 +342,41 @@ impl<'a> Profile<'a> {
             }
         }
         Ok(None)
+    }
+}
+
+/// Context information of an error
+#[non_exhaustive]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct ErrorContext {
+    pub raw_name: String,
+    pub full_name: String,
+    pub path: String,
+}
+impl StdError for ErrorContext {}
+/// NOTE: This is more a dummy implementation to work with anyhow then an usefull message.
+impl Display for ErrorContext {
+    fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
+        write!(
+            f,
+            "Name '{}' completed to '{}' and found at '{}'.",
+            self.raw_name, self.full_name, self.path,
+        )
+    }
+}
+impl From<Profile<'_>> for ErrorContext {
+    fn from(profile: Profile) -> Self {
+        Self {
+            raw_name: profile.raw_name.into_owned(),
+            full_name: profile.full_name.into_owned(),
+            path: profile.path.map_or_else(
+                || "Not found".to_string(),
+                |p| {
+                    p.into_os_string()
+                        .into_string()
+                        .unwrap_or_else(|os| os.to_string_lossy().into_owned())
+                },
+            ),
+        }
     }
 }

@@ -115,6 +115,16 @@ subcommands:
             index: 1
             required_unless: user
             help: The name of the profile to enable
+  - generate-standalone:
+      about: Copy the profile and all its includes into one file.
+      args:
+        - keep-inc:
+            long: keep-inc
+            help: Keep all includes of .inc's
+        - PROFILE_NAME:
+            index: 1
+            required: true
+            help: The name of the profile to generate a standalone version.
   - has:
       about: Look if a profile exists
       args:

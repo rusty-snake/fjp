@@ -71,6 +71,9 @@ macro_rules! profile_path {
 ///
 /// It will first look under `USER_PROFILE_DIR` and if it is not found there,
 /// then under `SYSTEM_PROFILE_DIR`.
+///
+/// `find_profile`, `profile_path!` and `get_name1` are considered soft-deprecated.
+/// Use `profile::Profile::*` instead.
 pub fn find_profile(name: &str) -> Option<path::PathBuf> {
     // Try user profile.
     let profile = profile_path!(USER / name);

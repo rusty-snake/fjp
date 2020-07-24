@@ -120,7 +120,7 @@ pub fn home_dir() -> Option<path::PathBuf> {
     if user.dir.as_os_str().is_empty() {
         None
     } else {
-        Some(path::PathBuf::from(user.dir))
+        Some(user.dir)
     }
 }
 

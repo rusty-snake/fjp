@@ -2,7 +2,7 @@ name: Rust
 
 on:
   push:
-    branches-ignore: [ "dependabot/*" ]
+    branches-ignore: [ "dependabot/**" ]
     paths:
       - .github/workflows/rust.yml
       - macros/src/*

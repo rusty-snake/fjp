@@ -22,6 +22,8 @@
 use clap::{crate_description, load_yaml, App};
 use env_logger::{Builder, Env};
 use lazy_static::lazy_static;
+use libc::getuid;
+use log::warn;
 
 mod location;
 mod profile;
@@ -71,6 +73,10 @@ fn main() {
     Builder::from_env(Env::new().default_filter_or("info"))
         .format_timestamp(None)
         .init();
+
+    if unsafe { getuid() } == 0 {
+        warn!("fjp is designed to be used as regular user.");
+    }
 
     let yaml = load_yaml!("cli.yaml");
     let matches = App::from_yaml(yaml)

@@ -122,6 +122,7 @@ dependencies = [
  "color-backtrace",
  "env_logger",
  "lazy_static",
+ "libc",
  "log",
  "macros",
  "nix",

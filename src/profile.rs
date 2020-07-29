@@ -23,7 +23,7 @@
 #![allow(dead_code)] // Some methods are for future use, others are USED! (=false positive)
 
 use crate::{SYSTEM_PROFILE_DIR, USER_PROFILE_DIR};
-use anyhow::{anyhow, Context};
+use anyhow::anyhow;
 use bitflags::bitflags;
 use lazy_static::lazy_static;
 use log::{debug, warn};

@@ -8,11 +8,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - CI using GitHub Actions
 - MSRV: 1.41
-- new subcommands: list, diff
+- new subcommands: list, diff, generate-standalone
 - make.sh: more controll about the installation paths
 - make.sh: support striping binaries
 - make.sh: can build rpms
-- add short a options
+- add short options
 
 ### Changed
 - cat: no-globals in now default

@@ -107,6 +107,10 @@ fn main() {
                 sub_c_arm = Some("enable");
                 writeln!(zcomp, "{}", line)
             }
+            "(generate-standalone)" => {
+                sub_c_arm = Some("generate-standalone");
+                writeln!(zcomp, "{}", line)
+            }
             "(has)" => {
                 sub_c_arm = Some("has");
                 writeln!(zcomp, "{}", line)
@@ -152,6 +156,13 @@ fn main() {
                 Some("enable") => {
                     if line.contains("_files") {
                         writeln!(zcomp, "{}", line.replace("_files", "_disabled_profiles"))
+                    } else {
+                        writeln!(zcomp, "{}", line)
+                    }
+                }
+                Some("generate-standalone") => {
+                    if line.contains("_files") {
+                        writeln!(zcomp, "{}", line.replace("_files", "_all_profiles"))
                     } else {
                         writeln!(zcomp, "{}", line)
                     }

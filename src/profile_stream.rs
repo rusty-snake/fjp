@@ -321,7 +321,7 @@ impl fmt::Display for ProfileEntry {
             Caps => writeln!(f, "caps")?,
             CapsDropAll => writeln!(f, "caps.drop all")?,
             CapsDrop(caps) => writeln!(f, "caps.drop {}", join(',', caps))?,
-            CapsKeep(caps) => writeln!(f, "caps.drop {}", join(',', caps))?,
+            CapsKeep(caps) => writeln!(f, "caps.keep {}", join(',', caps))?,
             Comment(comment) => writeln!(f, "#{}", comment)?,
             DBusUser(policy) => writeln!(f, "dbus-user {}", policy)?,
             DBusUserOwn(name) => writeln!(f, "dbus-user.own {}", name)?,
@@ -415,12 +415,12 @@ impl FromStr for ProfileEntry {
             CapsDropAll
         } else if line.starts_with("caps.drop ") {
             CapsDrop(unwrap_or_invalid!(
-                line[10..].split(',').map(|s| s.parse()).collect(),
+                line[10..].split(',').map(str::parse).collect(),
                 line
             ))
         } else if line.starts_with("caps.keep ") {
             CapsKeep(unwrap_or_invalid!(
-                line[10..].split(',').map(|s| s.parse()).collect(),
+                line[10..].split(',').map(str::parse).collect(),
                 line
             ))
         } else if line.starts_with('#') {

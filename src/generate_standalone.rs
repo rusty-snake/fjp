@@ -19,7 +19,7 @@
 
 use crate::{
     fatal,
-    profile::{ErrorContext as NewProfileErrorContext, NewProfileFlags, Profile},
+    profile::{ErrorContext as NewProfileErrorContext, Profile, ProfileFlags},
 };
 use anyhow::{bail, ensure};
 use clap::ArgMatches;
@@ -43,7 +43,7 @@ pub fn start(cli: &ArgMatches<'_>) {
 
     let profile = Profile::new(
         cli.value_of("PROFILE_NAME").unwrap(),
-        NewProfileFlags::default_with(NewProfileFlags::READ),
+        ProfileFlags::default_with(ProfileFlags::READ),
     )
     .unwrap_or_else(|err| {
         if let Some(err_ctx) = err.downcast_ref::<NewProfileErrorContext>() {
@@ -79,10 +79,7 @@ fn process(
                 write_lined!(line, standalone_profile);
             } else {
                 ensure!(recusion_level <= 16, "To many include levels");
-                match Profile::new(
-                    &line[8..],
-                    NewProfileFlags::default_with(NewProfileFlags::READ),
-                ) {
+                match Profile::new(&line[8..], ProfileFlags::default_with(ProfileFlags::READ)) {
                     Ok(profile) => process(
                         profile.raw_data().unwrap(),
                         standalone_profile,

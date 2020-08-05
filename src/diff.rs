@@ -18,7 +18,7 @@
  */
 
 use crate::fatal;
-use crate::profile::{NewProfileFlags, Profile};
+use crate::profile::{Profile, ProfileFlags};
 use crate::profile_stream::ProfileStream;
 use crate::utils::ColoredText;
 use clap::ArgMatches;
@@ -40,12 +40,12 @@ fn read_and_parse<'a>(cli: &'a ArgMatches<'a>) -> [(Profile<'a>, ProfileStream<'
 
     let profile1 = Profile::new(
         profile1_name,
-        NewProfileFlags::default_with(NewProfileFlags::READ),
+        ProfileFlags::default_with(ProfileFlags::READ),
     )
     .unwrap_or_else(|err| fatal!("Failed to read {}: {}", profile1_name, err));
     let profile2 = Profile::new(
         profile2_name,
-        NewProfileFlags::default_with(NewProfileFlags::READ),
+        ProfileFlags::default_with(ProfileFlags::READ),
     )
     .unwrap_or_else(|err| fatal!("Failed to read {}: {}", profile2_name, err));
 

@@ -22,6 +22,7 @@
 #![allow(clippy::unreadable_literal)] // bitflags are easier to read without underscores!!
 #![allow(dead_code)] // Some methods are for future use, others are USED! (=false positive)
 
+use crate::location::Location;
 use crate::{SYSTEM_PROFILE_DIR, USER_PROFILE_DIR};
 use anyhow::anyhow;
 use bitflags::bitflags;
@@ -30,7 +31,6 @@ use log::{debug, warn};
 use std::borrow::Cow;
 use std::collections::HashMap;
 use std::error::Error as StdError;
-use std::ffi::OsStr;
 use std::fmt::{Display, Formatter, Result as FmtResult};
 use std::fs::{read_dir, read_to_string};
 use std::io;
@@ -67,7 +67,7 @@ lazy_static! {
 
 bitflags! {
     /// Flags for creating a new instance of profile
-    pub struct NewProfileFlags: u8 {
+    pub struct ProfileFlags: u8 {
         /// Search in the current working directory (default)
         const LOOKUP_CWD        = 0b00000001;
         /// Search under `~/.config/firejail` (default)
@@ -78,9 +78,11 @@ bitflags! {
         const READ              = 0b00001000;
         /// Reject profiles with a '/'
         const DENY_BY_PATH      = 0b00010000;
+        /// Assume that the profile exists in the location with the highest priority
+        const ASSUME_EXISTENCE  = 0b00100000;
     }
 }
-impl NewProfileFlags {
+impl ProfileFlags {
     /// Create a new instance with the default flags and the provided additional flags
     pub fn default_with(additional_flags: Self) -> Self {
         let mut flags = Self::default();
@@ -89,7 +91,7 @@ impl NewProfileFlags {
     }
 }
 /// Default is `LOOKUP_CWD`, `LOOKUP_USER` and `LOOKUP_SYSTEM`
-impl Default for NewProfileFlags {
+impl Default for ProfileFlags {
     fn default() -> Self {
         Self::LOOKUP_CWD | Self::LOOKUP_USER | Self::LOOKUP_SYSTEM
     }
@@ -109,66 +111,79 @@ pub struct Profile<'a> {
     ///
     /// This is `None` if [`new`] is called without any `LOOKUP_*` flag
     /// or no profile exists for it in the searched locations.
+    ///
+    /// | | `.`, user, system | `.`, user | `.`, system | user, system | `.` | user | system |
+    /// | | | | | | | | |
+    /// | CWD USER SYSTEM (default) | `.` | `.` | `.` | user | `.` | user | system |
+    /// | CWD USER SYSTEM ASSUME | `.` | `.` | `.` | `.` | `.` | `.` | `.` |
+    /// | USER | user | user | none | user | none | user | none |
+    /// | USER ASSUME | user | user | user | user | user | user | user |
+    ///
+    /// [`new`]: #method.new
     path: Option<PathBuf>,
     /// The profile raw data
     ///
     /// This is `None` if [`new`] is called without READ flag (default),
     /// and [`read`] hasn't been called on it.
+    ///
+    /// [`new`]: #method.new
+    /// [`read`]: #method.read
     raw_data: Option<String>,
 }
 impl<'a> Profile<'a> {
     /// Create a new Profile
     ///
-    /// If new is called without READ flag, it is save to call unwrap on it.
+    /// If new is called without `READ` flag, it is save to call unwrap on it.
     /// However, be aware that this may change in the future.
     ///
     /// # Errors
     ///
-    /// This function can ATM only return an error if `NewProfileFlags::READ` was give.
+    /// This function can ATM only return an error if `ProfileFlags::READ` was give.
     /// This error can be downcasted to `std::io::Error` or [`ErrorContext`].
     ///
     /// # Panics
     ///
-    /// See [`lookup_profile`](#method.lookup_profile).
+    /// Panics if `name` if `.` or `..`.
     ///
     /// # Examples
     ///
     /// ```
-    /// // unwrap is save here, because NewProfileFlags::default() does not contain READ
-    /// let firefox_profile = Profile::new("firefox", NewProfileFlags::default()).unwrap();
+    /// // unwrap is save here, because ProfileFlags::default() does not contain READ
+    /// let firefox_profile = Profile::new("firefox", ProfileFlags::default()).unwrap();
     ///
     /// let totem_profile = Profile::new(
     ///     "totem.profile",
-    ///     NewProfileFlags::default_with(NewProfileFlags::READ),
+    ///     ProfileFlags::default_with(ProfileFlags::READ),
     /// )?;
+    ///
+    /// let keepassxc_user_path: Option<PathBuf> = Profile::new(
+    ///     "keepassxc",
+    ///     ProfileFlags::LOOKUP_USER | ProfileFlags::ASSUME_EXISTENCE | ProfileFlags::DENY_BY_PATH
+    /// )?.path();
     /// ```
     ///
     /// [`ErrorContext`]: struct.ErrorContext.html
-    pub fn new(name: &'a str, flags: NewProfileFlags) -> anyhow::Result<Self> {
+    pub fn new(name: &'a str, flags: ProfileFlags) -> anyhow::Result<Self> {
         let raw_name = Cow::Borrowed(name);
-        let full_name = Self::complete_name(name);
+        let full_name = complete_name(name);
 
         debug!("Expanded profile-name '{}' to '{}'.", raw_name, full_name);
 
         let path;
         if name.contains('/') {
-            if flags.contains(NewProfileFlags::DENY_BY_PATH) {
+            if flags.contains(ProfileFlags::DENY_BY_PATH) {
                 path = None;
-            } else if Path::new(name).exists() {
+            } else if flags.contains(ProfileFlags::ASSUME_EXISTENCE) || Path::new(name).exists() {
                 path = Some(PathBuf::from(name));
             } else {
                 path = None;
             }
         } else {
-            path = Self::lookup_profile(OsStr::new(&*full_name), flags);
+            path = lookup_profile(&*full_name, flags);
         }
 
         if let Some(ref path) = path {
-            debug!(
-                "Found profile {} at '{}'",
-                full_name,
-                path.to_string_lossy(),
-            );
+            debug!("Found profile {} at '{}'", full_name, path.display());
         }
 
         let mut new_profile = Self {
@@ -178,7 +193,7 @@ impl<'a> Profile<'a> {
             raw_data: None,
         };
 
-        if flags.contains(NewProfileFlags::READ) {
+        if flags.contains(ProfileFlags::READ) {
             let res = new_profile.read();
             if let Err(err) = res {
                 return Err(anyhow::Error::new(err).context(ErrorContext::from(new_profile)));
@@ -188,7 +203,7 @@ impl<'a> Profile<'a> {
         Ok(new_profile)
     }
 
-    /// Get the raw_name of the profile.
+    /// Get the raw_name of the profile (i.e. the one passed to new).
     pub fn raw_name(&self) -> &Cow<'_, str> {
         &self.raw_name
     }
@@ -215,7 +230,7 @@ impl<'a> Profile<'a> {
     /// # Examples
     ///
     /// ```
-    /// let mut profile = Profile::new("firefox", NewProfileFlags::default())?;
+    /// let mut profile = Profile::new("firefox", ProfileFlags::default())?;
     /// assert_eq!(profile.data(), &None);
     ///
     /// profile.read()?;
@@ -241,10 +256,10 @@ impl<'a> Profile<'a> {
     /// # Examples
     ///
     /// ```
-    /// let profile = Profile::new("firefox", NewProfileFlags::READ)?;
+    /// let profile = Profile::new("firefox", ProfileFlags::READ)?;
     /// assert_eq!(profile.readed(), true);
     ///
-    /// let mut profile = Profile::new("firefox", NewProfileFlags::default())?;
+    /// let mut profile = Profile::new("firefox", ProfileFlags::default())?;
     /// assert_eq!(profile.readed(), false);
     /// profile.read()?;
     /// assert_eq!(profile.readed(), true);
@@ -253,96 +268,79 @@ impl<'a> Profile<'a> {
     pub fn readed(&self) -> bool {
         self.raw_data.is_some()
     }
+}
 
-    /// Complete a profile name
-    ///
-    /// This expands shortnames and adds `.profile` if necessary.
-    ///
-    /// # Panics
-    ///
-    /// This functions panics if `name` contains a `/` or is equal to `.`/`..`.
-    fn complete_name(name: &str) -> Cow<'_, str> {
-        if name.contains('/') {
-            panic!("Profile names must not contain '/'.");
-        }
-        if name == "." || name == ".." {
-            panic!("Profile names must not be '.' or '..'");
-        }
-
-        if let Some(long_name) = SHORTNAMES.get(name) {
-            Cow::Borrowed(long_name)
-        } else if name.ends_with(".inc") || name.ends_with(".local") || name.ends_with(".profile") {
-            Cow::Borrowed(name)
-        } else {
-            Cow::Owned(name.to_string() + ".profile")
-        }
+/// Complete a profile name
+///
+/// This expands shortnames and adds `.profile` if necessary.
+///
+/// # Panics
+///
+/// This functions panics if `name` contains a `/` or is equal to `.`/`..`.
+pub fn complete_name(name: &str) -> Cow<'_, str> {
+    if name.contains('/') {
+        panic!("Profile names must not contain '/'.");
+    }
+    if name == "." || name == ".." {
+        panic!("Profile names must not be '.' or '..'");
     }
 
-    /// Lookup for a file named `name` in every location specified in `flags`
-    ///
-    /// The path to the first found profile is returned,
-    /// if no profile is found, `None` is returned.
-    ///
-    /// Search order:
-    ///   1. `LOOKUP_CWD` (`.`)
-    ///   2. `LOOKUP_USER` (USER_PROFILE_DIR (`~/.config/firejail`))
-    ///   3. `LOOKUP_SYSTEM` (SYSTEM_PROFILE_DIR (`/etc/firejail`))
-    fn lookup_profile(name: &OsStr, flags: NewProfileFlags) -> Option<PathBuf> {
-        if flags.contains(NewProfileFlags::LOOKUP_CWD) {
-            Self::lookup_dir(name, ".").unwrap_or_else(|err| {
-                warn!(
-                    "An error occurred while search in the current working directory: {}",
-                    err
-                );
-                None
-            })
-        } else {
-            None
-        }
-        .or_else(|| {
-            if flags.contains(NewProfileFlags::LOOKUP_USER) {
-                Self::lookup_dir(name, &*USER_PROFILE_DIR).unwrap_or_else(|err| {
-                    warn!(
-                        "An error occurred while search in the user profile directory: {}",
-                        err
-                    );
-                    None
-                })
+    if let Some(long_name) = SHORTNAMES.get(name) {
+        Cow::Borrowed(long_name)
+    } else if name.ends_with(".inc") || name.ends_with(".local") || name.ends_with(".profile") {
+        Cow::Borrowed(name)
+    } else {
+        Cow::Owned(name.to_string() + ".profile")
+    }
+}
+
+/// Lookup for a file named `name` in every location specified in `flags`
+///
+/// The path to the first found profile is returned,
+/// if no profile is found, `None` is returned.
+/// `ASSUME_EXISTENCE` is respected.
+///
+/// Search order:
+///   1. `LOOKUP_CWD` (`.`)
+///   2. `LOOKUP_USER` (USER_PROFILE_DIR (`~/.config/firejail`))
+///   3. `LOOKUP_SYSTEM` (SYSTEM_PROFILE_DIR (`/etc/firejail`))
+fn lookup_profile(name: &str, flags: ProfileFlags) -> Option<PathBuf> {
+    macro_rules! black_magic {
+        (if $cond:expr => $location:expr) => {
+            if $cond {
+                if flags.contains(ProfileFlags::ASSUME_EXISTENCE) {
+                    Some($location.get_profile_path(name))
+                } else {
+                    match read_dir($location.as_ref()) {
+                        Ok(files) => files
+                            .filter_map(|ent| match ent {
+                                Ok(ent) => Some(ent),
+                                Err(err) => {
+                                    warn!("There was a error in the lookup of: {}", err);
+                                    None
+                                }
+                            })
+                            .find(|ent| ent.file_name() == name)
+                            .map(|ent| ent.path()),
+                        Err(err) => {
+                            warn!("Failed to open {}: {}", $location, err);
+                            None
+                        }
+                    }
+                }
             } else {
                 None
             }
-        })
-        .or_else(|| {
-            if flags.contains(NewProfileFlags::LOOKUP_SYSTEM) {
-                Self::lookup_dir(name, &*SYSTEM_PROFILE_DIR).unwrap_or_else(|err| {
-                    warn!(
-                        "An error occurred while search in the system profile directory: {}",
-                        err
-                    );
-                    None
-                })
-            } else {
-                None
-            }
-        })
+        };
     }
 
-    /// Check if `path` contains `name`
-    ///
-    /// If so `Ok(Some(PathBuf::from(path+name)))` is returned, otherwise `Ok(None)`
-    fn lookup_dir<N, P>(name: N, path: P) -> io::Result<Option<PathBuf>>
-    where
-        N: AsRef<OsStr>,
-        P: AsRef<Path>,
-    {
-        for etr in read_dir(path.as_ref())? {
-            let etr = etr?;
-            if etr.file_name() == name.as_ref() {
-                return Ok(Some(etr.path()));
-            }
-        }
-        Ok(None)
-    }
+    black_magic!(if flags.contains(ProfileFlags::LOOKUP_CWD) => Location::from("."))
+        .or_else(
+            || black_magic!(if flags.contains(ProfileFlags::LOOKUP_USER) => &*USER_PROFILE_DIR),
+        )
+        .or_else(
+            || black_magic!(if flags.contains(ProfileFlags::LOOKUP_SYSTEM) => &*SYSTEM_PROFILE_DIR),
+        )
 }
 
 /// Context information of an error

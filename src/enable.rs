@@ -19,7 +19,7 @@
 
 use crate::{
     disable::DISABLED_DIR,
-    profile::{NewProfileFlags, Profile},
+    profile::{Profile, ProfileFlags},
     utils::input,
     USER_PROFILE_DIR,
 };
@@ -37,7 +37,7 @@ pub fn start(cli: &ArgMatches<'_>) {
         enable_profile(
             &Profile::new(
                 profile_name,
-                NewProfileFlags::LOOKUP_USER | NewProfileFlags::DENY_BY_PATH,
+                ProfileFlags::LOOKUP_USER | ProfileFlags::DENY_BY_PATH,
             )
             .unwrap(),
         );

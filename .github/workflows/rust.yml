@@ -6,7 +6,6 @@ on:
     paths:
       - .github/workflows/rust.yml
       - macros/src/*
-      - macros/Cargo.lock
       - macros/Cargo.toml
       - src/*
       - Cargo.lock
@@ -17,7 +16,6 @@ on:
     paths:
       - .github/workflows/rust.yml
       - macros/src/*
-      - macros/Cargo.lock
       - macros/Cargo.toml
       - src/*
       - Cargo.lock

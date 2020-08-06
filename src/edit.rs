@@ -19,7 +19,8 @@
 
 #![allow(clippy::unreadable_literal)] // bitflags are easier to read without underscores!!
 
-use crate::{fatal, profile_path, utils::get_name1};
+use crate::fatal;
+use crate::profile::{Profile, ProfileFlags};
 use bitflags::bitflags;
 use clap::ArgMatches;
 use log::{debug, info, warn};
@@ -48,19 +49,32 @@ pub fn start(cli: &ArgMatches<'_>) {
         | if cli.is_present("tmp") { Flags::TMP } else { Flags::NULL };
 
     // NOTE: unwrap can't faile here, because PROFILE_NAME is required
-    let profile_name = get_name1(cli.value_of("PROFILE_NAME").unwrap());
+    let profile_name = cli.value_of("PROFILE_NAME").unwrap();
+
     debug!("profile name: {}", profile_name);
 
-    let system_profile = profile_path!(SYSTEM / &profile_name);
-    debug!("system profile: {}", system_profile.to_string_lossy());
+    let user_profile = Profile::new(
+        profile_name,
+        ProfileFlags::LOOKUP_USER | ProfileFlags::DENY_BY_PATH | ProfileFlags::ASSUME_EXISTENCE,
+    )
+    .unwrap();
 
-    let user_profile = profile_path!(USER / &profile_name);
-    debug!("user profile: {}", user_profile.to_string_lossy());
+    debug!("user profile: {}", user_profile.full_name());
 
-    if flags.contains(Flags::TMP) {
-        prepare_tmp_edit(&user_profile, &system_profile, flags);
-    } else {
-        prepare_edit(&user_profile, &system_profile, flags);
+    let system_profile = Profile::new(
+        profile_name,
+        ProfileFlags::LOOKUP_SYSTEM | ProfileFlags::DENY_BY_PATH | ProfileFlags::ASSUME_EXISTENCE,
+    )
+    .unwrap();
+
+    debug!("system profile: {}", system_profile.full_name());
+
+    if let (Some(user_path), Some(system_path)) = (user_profile.path(), system_profile.path()) {
+        if flags.contains(Flags::TMP) {
+            prepare_tmp_edit(user_path, system_path, flags);
+        } else {
+            prepare_edit(user_path, system_path, flags);
+        }
     }
 }
 

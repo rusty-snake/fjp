@@ -106,6 +106,11 @@ scan
 
 Scan for common mistakes and outdated options in ~/.config/firejail.
 
+query
+-----
+
+Some kind of higherlevel grep (e.g. exist a blacklist for foo/bar; list all redirect profiles; ...)
+
 gui
 ---
 

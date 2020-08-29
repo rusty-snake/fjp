@@ -149,9 +149,13 @@ where
     I: IntoIterator<Item = U>,
 {
     let sep = sep.to_string();
-    iterable
-        .into_iter()
-        .fold("".to_string(), |acc, item| acc + &item.to_string() + &sep)
+    let mut iterable = iterable.into_iter();
+
+    if let Some(first_item) = iterable.next() {
+        iterable.fold(first_item.to_string(), |acc, item| acc + &sep + &item.to_string())
+    } else {
+        String::new()
+    }
 }
 
 //
@@ -232,20 +236,18 @@ impl AsRef<str> for ColoredText {
 }
 
 pub trait IteratorExt: Iterator {
-    fn collect_results_to_vec<T, E>(mut self) -> Result<Vec<T>, E>
+    fn collect_results_to_vec<T, E>(self) -> Result<Vec<T>, E>
     where
         Self: Iterator<Item = Result<T, E>> + Sized,
     {
-        if let Some(Err(err)) = self.find(Result::is_err) {
-            return Err(err);
+        let mut vec = Vec::new();
+        for item in self {
+            match item {
+                Ok(item) => vec.push(item),
+                Err(err) => return Err(err),
+            }
         }
-
-        Ok(self
-            .map(|item| match item {
-                Ok(item) => item,
-                Err(_) => unreachable!(),
-            })
-            .collect())
+        Ok(vec)
     }
 }
 

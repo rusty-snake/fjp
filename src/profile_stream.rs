@@ -623,9 +623,8 @@ impl FromStr for Protocol {
     }
 }
 impl fmt::Display for Protocol {
-    #[rustfmt::skip]
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        writeln!(
+        write!(
             f,
             "{}",
             match self {

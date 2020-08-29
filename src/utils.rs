@@ -152,7 +152,9 @@ where
     let mut iterable = iterable.into_iter();
 
     if let Some(first_item) = iterable.next() {
-        iterable.fold(first_item.to_string(), |acc, item| acc + &sep + &item.to_string())
+        iterable.fold(first_item.to_string(), |acc, item| {
+            acc + &sep + &item.to_string()
+        })
     } else {
         String::new()
     }

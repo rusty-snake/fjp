@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 ### Added
 - CI using GitHub Actions
-- MSRV: 1.41
+- MSRV: 1.42
 - new subcommands: list, diff, generate-standalone
 - make.sh: more controll about the installation paths
 - make.sh: support striping binaries

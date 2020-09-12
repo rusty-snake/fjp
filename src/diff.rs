@@ -19,7 +19,7 @@
 
 use crate::fatal;
 use crate::profile::{Profile, ProfileFlags};
-use crate::profile_stream::{ProfileStream, ProfileEntry};
+use crate::profile_stream::{ProfileEntry, ProfileStream};
 use crate::utils::ColoredText;
 use clap::ArgMatches;
 use termcolor::Color;

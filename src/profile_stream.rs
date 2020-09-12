@@ -18,6 +18,29 @@
  */
 
 //! Abstract representations of option in a profile
+//!
+//! ```
+//! use crate::profile_stream::{ProfileStream, ProfileEntry};
+//! use std::fs::read_to_string;
+//! use std::str::FromStr;
+//!
+//! let firefox_stream =
+//!     ProfileStream::from_str(&read_to_string("/etc/firejail/firefox.profile")?)?;
+//! let thunderbird_stream =
+//!     read_to_string("/etc/firejail/thunderbird.profile")?.parse::<ProfileStream>()?;
+//!
+//! if !firefox_stream.contains(&ProfileEntry::Nonewprivs) {
+//!     println!("firefox.profile does not set nonewprivs!");
+//! }
+//!
+//! println!(
+//!     "thunderbird.profile has {} includes",
+//!     thunderbird_stream
+//!         .iter()
+//!         .filter(|e| matches!(****e, ProfileEntry::Include(_)))
+//!         .count()
+//! );
+//! ```
 
 #![allow(clippy::cognitive_complexity)]
 #![allow(clippy::unreadable_literal)] // bitflags are easier to read without underscores!!
@@ -172,6 +195,10 @@ impl<'a> IntoIterator for &'a ProfileStream<'a> {
 impl FromStr for ProfileStream<'_> {
     type Err = Self;
 
+    /// Parses a string `s` to return a `ProfileStream`
+    ///
+    /// If there is one `ProfileEntry::_Invalid`, `Err(ProfileStream)` is returned,
+    /// otherwise `Ok(ProfileStream)`.
     fn from_str(s: &str) -> Result<Self, Self> {
         let mut vec = Vec::new();
         let mut ret_as_err = false;
@@ -233,8 +260,9 @@ pub enum ProfileEntry {
     CapsDropAll,
     CapsDrop(Vec<Capabilities>),
     CapsKeep(Vec<Capabilities>),
-    /// A comment (without the leading `#`)
+    /// A comment (without the leading `#`).
     /// This variant might change in the future to something like `Comment(Comment::Foo(String))`
+    /// to easier work with profile headers.
     Comment(String),
     DBusUser(DBusPolicy),
     DBusUserOwn(String),
@@ -634,6 +662,7 @@ impl fmt::Display for Protocol {
 // Capabilities
 //
 
+/// Caps used by the various `caps` commands
 #[derive(Copy, Clone, Debug, Eq, Hash, PartialEq)]
 pub enum Capabilities {
     AuditControl,

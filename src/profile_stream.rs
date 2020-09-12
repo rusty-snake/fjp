@@ -301,14 +301,6 @@ pub enum ProfileEntry {
     /// This variant will be removed in the future.
     _Unknow(String),
 }
-impl ProfileEntry {
-    pub fn is_comment(&self) -> bool {
-        match self {
-            Self::Comment(_) => true,
-            _ => false,
-        }
-    }
-}
 impl fmt::Display for ProfileEntry {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         use ProfileEntry::*;

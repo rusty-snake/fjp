@@ -37,7 +37,9 @@ pub fn start(cli: &ArgMatches<'_>) {
         enable_profile(
             &Profile::new(
                 profile_name,
-                ProfileFlags::LOOKUP_USER | ProfileFlags::DENY_BY_PATH,
+                ProfileFlags::LOOKUP_USER
+                    | ProfileFlags::ASSUME_EXISTENCE
+                    | ProfileFlags::DENY_BY_PATH,
             )
             .unwrap(),
         );
@@ -59,13 +61,13 @@ fn enable_profile(profile: &Profile) {
     let disabled_profile = DISABLED_DIR.get_profile_path(profile.full_name());
     debug!("disabled profile: {}", disabled_profile.to_string_lossy());
 
-    let enabled_profile;
-    if let Some(path) = profile.path() {
-        enabled_profile = path;
-    } else {
+    if !disabled_profile.exists() {
         error!("{} is not disabled.", profile.full_name());
         return;
     }
+
+    // NOTE: unwrap can't fail becuase profile is created with ASSUME_EXISTENCE.
+    let enabled_profile = profile.path().unwrap();
     debug!("enabled profile: {}", enabled_profile.to_string_lossy());
 
     if enabled_profile.exists() {

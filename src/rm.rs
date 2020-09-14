@@ -17,7 +17,7 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-use crate::{profile_path, utils::get_name1};
+use crate::profile::{Profile, ProfileFlags};
 use clap::ArgMatches;
 use log::{debug, error, trace};
 use std::fs::remove_file;
@@ -27,9 +27,12 @@ pub fn start(cli: &ArgMatches<'_>) {
 
     let profiles = cli.values_of("PROFILE_NAMES").unwrap();
     for profile in profiles {
-        let profile = get_name1(profile);
-        trace!("Deleting '{}'.", profile);
-        remove_file(profile_path!(USER / &profile))
-            .unwrap_or_else(|err| error!("Failed to delete '{}': {}", profile, err));
+        let profile = Profile::new(
+            profile,
+            ProfileFlags::LOOKUP_USER | ProfileFlags::DENY_BY_PATH | ProfileFlags::ASSUME_EXISTENCE,
+        )
+        .unwrap();
+        remove_file(profile.path().unwrap())
+            .unwrap_or_else(|err| error!("Failed to delete '{}': {}", profile.full_name(), err));
     }
 }

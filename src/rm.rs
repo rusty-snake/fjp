@@ -32,6 +32,7 @@ pub fn start(cli: &ArgMatches<'_>) {
             ProfileFlags::LOOKUP_USER | ProfileFlags::DENY_BY_PATH | ProfileFlags::ASSUME_EXISTENCE,
         )
         .unwrap();
+        trace!("Deleting '{}'.", profile.full_name());
         remove_file(profile.path().unwrap())
             .unwrap_or_else(|err| error!("Failed to delete '{}': {}", profile.full_name(), err));
     }

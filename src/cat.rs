@@ -18,12 +18,10 @@
  */
 
 use crate::profile::{Profile, ProfileFlags};
-use crate::utils::ColoredText;
+use crate::{fatal, utils::ColoredText};
 use clap::ArgMatches;
 use log::{debug, error, warn};
-use std::fs::read_to_string;
 use std::io;
-use std::path;
 use std::process::{Child, Command, Stdio};
 use termcolor::Color;
 
@@ -65,11 +63,10 @@ pub fn start(cli: &ArgMatches<'_>) {
         show_redirects: !cli.is_present("no-redirects"),
     };
     let name = cli.value_of("PROFILE_NAME").unwrap();
-    let profile_flags = ProfileFlags::default();
-    let profile = Profile::new(name, profile_flags).unwrap();
-
-    if let Some(path) = profile.path() {
-        let content = read_content(path).expect("Couldn't Read file.");
+    let profile_flags = ProfileFlags::default_with(ProfileFlags::READ);
+    let profile =
+        Profile::new(name, profile_flags).expect("File Doesn't exist or Couldn't Read file.");
+    if let Some(content) = profile.raw_data() {
         process(&profile, &content, &opts, &mut output, 0);
     }
 
@@ -87,7 +84,7 @@ fn process<W: io::Write>(
     mut depth: u8,
 ) {
     if depth >= 16 {
-        error!("Too many include levels");
+        fatal!("To many include levels");
     }
     depth += 1;
 
@@ -99,7 +96,7 @@ fn process<W: io::Write>(
         }
     }
 
-    show_file(&profile, &content, output);
+    show_file(profile, content, output);
 
     if opts.show_redirects {
         if let Some(profiles) = profiles {
@@ -152,29 +149,29 @@ fn show_locals<W: io::Write>(locals: &[String], _opts: &Options, output: &mut W)
             name != "globals.local" && name != "pre-globals.local" && name != "post-globals.local"
         })
         .filter_map(|name| {
-            let flags = ProfileFlags::default();
-            let profile = Profile::new(name, flags).unwrap();
-            Some(profile)
+            let profile_flags = ProfileFlags::default_with(ProfileFlags::READ);
+            match Profile::new(name, profile_flags) {
+                Ok(profile) => Some(profile),
+                Err(err) => {
+                    warn!("Couldn't Read file : {}", err);
+                    None
+                }
+            }
         })
         .for_each(|profile| {
-            if let Some(path) = profile.path() {
-                let content = read_content(path).expect("Couldn't Read file.");
-                show_file(&profile, &content, output)
+            if let Some(content) = profile.raw_data() {
+                show_file(&profile, &content, output);
             }
         });
 }
 
 fn show_profiles<W: io::Write>(profiles: &[String], opts: &Options, output: &mut W, depth: u8) {
     for name in profiles {
-        let flags = ProfileFlags::default();
-        let profile = Profile::new(name, flags).unwrap();
-        if let Some(path) = profile.path() {
-            let content = read_content(path).expect("Couldn't Read file.");
+        let profile_flags = ProfileFlags::default_with(ProfileFlags::READ);
+        let profile =
+            Profile::new(name, profile_flags).expect("File Doesn't exist or Couldn't Read file.");
+        if let Some(content) = profile.raw_data() {
             process(&profile, &content, opts, output, depth);
         }
     }
-}
-
-fn read_content(path: &path::Path) -> io::Result<String> {
-    read_to_string(path)
 }

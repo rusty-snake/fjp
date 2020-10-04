@@ -17,26 +17,27 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-use crate::utils::{find_profile, get_name1, ColoredText};
+use crate::profile::{Profile, ProfileFlags};
+use crate::utils::ColoredText;
 use clap::ArgMatches;
 use log::debug;
 use std::process::exit;
 use termcolor::Color;
-
 pub fn start(cli: &ArgMatches<'_>) {
     debug!("subcommand: has");
 
     let profile_name = cli.value_of("PROFILE_NAME").unwrap();
-
-    if let Some(profile) = find_profile(&get_name1(profile_name)) {
+    let flags = ProfileFlags::default();
+    let profile = Profile::new(profile_name, flags).unwrap();
+    if let Some(path) = profile.path() {
         println!(
-            "Found profile for {} at {}.",
-            profile_name,
-            ColoredText::new(Color::Green, &profile.to_string_lossy())
+            "Profile found for {} at {}",
+            profile.raw_name(),
+            ColoredText::new(Color::Green, path.to_string_lossy())
         );
         exit(0);
     } else {
-        println!("Cloud not find a profile for {}.", profile_name);
+        println!("Could not find a Profile for {}.", profile_name);
         exit(100);
     }
 }

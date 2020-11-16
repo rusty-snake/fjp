@@ -182,8 +182,10 @@ impl<'a> Profile<'a> {
             path = lookup_profile(&*full_name, flags);
         }
 
-        if let Some(ref path) = path {
-            debug!("Found profile {} at '{}'", full_name, path.display());
+        if !flags.contains(ProfileFlags::ASSUME_EXISTENCE) {
+            if let Some(ref path) = path {
+                debug!("Found profile {} at '{}'", full_name, path.display());
+            }
         }
 
         let mut new_profile = Self {

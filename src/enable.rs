@@ -66,7 +66,7 @@ fn enable_profile(profile: &Profile) {
         return;
     }
 
-    // NOTE: unwrap can't fail becuase profile is created with ASSUME_EXISTENCE.
+    // NOTE: unwrap can't fail because profile is created with ASSUME_EXISTENCE.
     let enabled_profile = profile.path().unwrap();
     debug!("enabled profile: {}", enabled_profile.to_string_lossy());
 

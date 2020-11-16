@@ -23,6 +23,7 @@ use clap::ArgMatches;
 use log::debug;
 use std::process::exit;
 use termcolor::Color;
+
 pub fn start(cli: &ArgMatches<'_>) {
     debug!("subcommand: has");
 

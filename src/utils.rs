@@ -237,24 +237,6 @@ impl AsRef<str> for ColoredText {
     }
 }
 
-pub trait IteratorExt: Iterator {
-    fn collect_results_to_vec<T, E>(self) -> Result<Vec<T>, E>
-    where
-        Self: Iterator<Item = Result<T, E>> + Sized,
-    {
-        let mut vec = Vec::new();
-        for item in self {
-            match item {
-                Ok(item) => vec.push(item),
-                Err(err) => return Err(err),
-            }
-        }
-        Ok(vec)
-    }
-}
-
-impl<T: ?Sized> IteratorExt for T where T: Iterator {}
-
 #[cfg(test)]
 mod tests {
     use super::*;

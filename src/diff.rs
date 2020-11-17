@@ -19,7 +19,7 @@
 
 use crate::fatal;
 use crate::profile::{Profile, ProfileFlags};
-use crate::profile_stream::{ProfileEntry, ProfileStream};
+use crate::profile_stream::{Content, ProfileStream};
 use crate::utils::ColoredText;
 use clap::ArgMatches;
 use termcolor::Color;
@@ -34,18 +34,18 @@ pub fn start(cli: &ArgMatches<'_>) {
     }
 }
 
-fn read_and_parse<'a>(cli: &'a ArgMatches<'a>) -> [(Profile<'a>, ProfileStream<'_>); 2] {
+fn read_and_parse<'a>(cli: &'a ArgMatches<'a>) -> [(Profile<'a>, ProfileStream); 2] {
     let profile1_name = cli.value_of("PROFILE_NAME1").unwrap();
     let profile2_name = cli.value_of("PROFILE_NAME2").unwrap();
 
     let profile1 = Profile::new(
         profile1_name,
-        ProfileFlags::default_with(ProfileFlags::READ),
+        ProfileFlags::default().with(ProfileFlags::READ),
     )
     .unwrap_or_else(|err| fatal!("Failed to read {}: {}", profile1_name, err));
     let profile2 = Profile::new(
         profile2_name,
-        ProfileFlags::default_with(ProfileFlags::READ),
+        ProfileFlags::default().with(ProfileFlags::READ),
     )
     .unwrap_or_else(|err| fatal!("Failed to read {}: {}", profile2_name, err));
 
@@ -66,8 +66,8 @@ fn read_and_parse<'a>(cli: &'a ArgMatches<'a>) -> [(Profile<'a>, ProfileStream<'
 fn format_color(
     profile1: &Profile<'_>,
     profile2: &Profile<'_>,
-    profile1_stream: &ProfileStream<'_>,
-    profile2_stream: &ProfileStream<'_>,
+    profile1_stream: &ProfileStream,
+    profile2_stream: &ProfileStream,
 ) {
     println!(
         "{}\n{}\n{}\n{}",
@@ -77,10 +77,10 @@ fn format_color(
         ),
         profile1_stream
             .iter()
-            .map(|l| if profile2_stream.contains(l) {
-                l.to_string()
+            .map(|l| if profile2_stream.contains(&l.content) {
+                l.content.to_string()
             } else {
-                ColoredText::new(Color::Green, l.to_string()).into_string()
+                ColoredText::new(Color::Green, l.content.to_string()).into_string()
             })
             .collect::<String>(),
         ColoredText::new(
@@ -89,10 +89,10 @@ fn format_color(
         ),
         profile2_stream
             .iter()
-            .map(|l| if profile1_stream.contains(l) {
-                l.to_string()
+            .map(|l| if profile1_stream.contains(&l.content) {
+                l.content.to_string()
             } else {
-                ColoredText::new(Color::Green, l.to_string()).into_string()
+                ColoredText::new(Color::Green, l.content.to_string()).into_string()
             })
             .collect::<String>()
     );
@@ -101,24 +101,24 @@ fn format_color(
 fn format_simple(
     profile1: &Profile<'_>,
     profile2: &Profile<'_>,
-    profile1_stream: &ProfileStream<'_>,
-    profile2_stream: &ProfileStream<'_>,
+    profile1_stream: &ProfileStream,
+    profile2_stream: &ProfileStream,
 ) {
     let profile1_unique = profile1_stream
         .iter()
-        .filter(|l| !matches!(****l, ProfileEntry::Comment(_)))
-        .filter(|l| !profile2_stream.contains(l))
+        .filter(|l| !matches!(*l.content, Content::Comment(_)))
+        .filter(|l| !profile2_stream.contains(&l.content))
         .cloned()
         .collect::<ProfileStream>();
     let profile2_unique = profile2_stream
         .iter()
-        .filter(|l| !matches!(****l, ProfileEntry::Comment(_)))
-        .filter(|l| !profile1_stream.contains(l))
+        .filter(|l| !matches!(*l.content, Content::Comment(_)))
+        .filter(|l| !profile1_stream.contains(&l.content))
         .cloned()
         .collect::<ProfileStream>();
 
     print!(
-        "{}\n{}\n{}\n{}\n",
+        "{}\n{}\n{}\n{}",
         ColoredText::new(
             Color::Cyan,
             format!(

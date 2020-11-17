@@ -17,37 +17,13 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-//! Abstract representations of option in a profile
-//!
-//! ```
-//! use crate::profile_stream::{ProfileStream, ProfileEntry};
-//! use std::fs::read_to_string;
-//! use std::str::FromStr;
-//!
-//! let firefox_stream =
-//!     ProfileStream::from_str(&read_to_string("/etc/firejail/firefox.profile")?)?;
-//! let thunderbird_stream =
-//!     read_to_string("/etc/firejail/thunderbird.profile")?.parse::<ProfileStream>()?;
-//!
-//! if !firefox_stream.contains(&ProfileEntry::Nonewprivs) {
-//!     println!("firefox.profile does not set nonewprivs!");
-//! }
-//!
-//! println!(
-//!     "thunderbird.profile has {} includes",
-//!     thunderbird_stream
-//!         .iter()
-//!         .filter(|e| matches!(****e, ProfileEntry::Include(_)))
-//!         .count()
-//! );
-//! ```
+//! Abstract representations of a firejail profile
 
 #![allow(clippy::cognitive_complexity)]
-#![allow(clippy::unreadable_literal)] // bitflags are easier to read without underscores!!
 
-use crate::utils::{join, IteratorExt};
-use anyhow::anyhow;
-use std::borrow::{Borrow, BorrowMut, Cow};
+use crate::utils::join;
+use anyhow::{anyhow, Error};
+use std::borrow::{Borrow, BorrowMut};
 use std::fmt;
 use std::iter::FromIterator;
 use std::slice;
@@ -55,215 +31,298 @@ use std::str::FromStr;
 use std::sync::Arc;
 use std::vec;
 
-pub type CowArcProfileEntry<'a> = Cow<'a, Arc<ProfileEntry>>;
-
 /// An abstract stream of lines in a firejail profile
-#[derive(Clone, Debug, PartialEq)]
-pub struct ProfileStream<'a> {
-    inner: Vec<CowArcProfileEntry<'a>>,
+#[derive(Clone, Debug)]
+pub struct ProfileStream {
+    inner: Vec<Line>,
 }
-impl ProfileStream<'_> {
-    /// Return `true` if this `ProfileStream` contains `entry`, otherwise `false`
-    #[inline]
-    pub fn contains(&self, entry: &ProfileEntry) -> bool {
-        self.inner.iter().any(|p| p == entry)
+impl ProfileStream {
+    /// Check whether `self` contains `content` or no
+    pub fn contains(&self, content: &Content) -> bool {
+        self.inner.iter().any(|l| &*l.content == content)
     }
 
-    #[inline]
-    pub fn iter(&self) -> slice::Iter<'_, CowArcProfileEntry> {
-        self.inner.iter()
+    /// Check whether there are any invalid lines
+    pub fn has_errored(&self) -> bool {
+        self.inner
+            .iter()
+            .any(|l| matches!(*l.content, Content::Invalid(_, _)))
     }
 
+    /// Retruns a ProfileStream containing all invalid lines from self
+    pub fn errored(&self) -> Option<Self> {
+        let vec: Vec<_> = self
+            .inner
+            .iter()
+            .filter(|l| matches!(*l.content, Content::Invalid(_, _)))
+            .cloned()
+            .collect();
+        if vec.is_empty() {
+            None
+        } else {
+            Some(Self { inner: vec })
+        }
+    }
+
+    /// Set all `lineno` in the `ProfileStream` to `None`
+    pub fn strip_lineno(&mut self) {
+        for l in self.inner.iter_mut() {
+            l.lineno = None;
+        }
+    }
+
+    /// Rewrite all `lineno` based on the current position in the `ProfileStream`
+    pub fn rewrite_lineno(&mut self) {
+        for (i, l) in self.inner.iter_mut().enumerate() {
+            l.lineno = Some(i);
+        }
+    }
+}
+impl ProfileStream {
     /// Extracts a slice containing the entire underlying vector
     #[inline]
-    pub fn as_slice(&self) -> &[CowArcProfileEntry<'_>] {
+    pub fn as_slice(&self) -> &[Line] {
         &self.inner[..]
-    }
-}
-impl<'a> ProfileStream<'a> {
-    #[inline]
-    pub fn iter_mut(&mut self) -> slice::IterMut<'a, CowArcProfileEntry> {
-        self.inner.iter_mut()
     }
 
     /// Extracts a mutable slice containing the entire underlying vector
     #[inline]
-    pub fn as_mut_slice(&mut self) -> &mut [CowArcProfileEntry<'a>] {
+    pub fn as_mut_slice(&mut self) -> &mut [Line] {
         &mut self.inner[..]
     }
 
     /// Consum the `ProfileStream` and retrun the underlying vector
     #[inline]
-    pub fn into_inner(self) -> Vec<CowArcProfileEntry<'a>> {
+    pub fn into_inner(self) -> Vec<Line> {
         self.inner
     }
-}
-impl<'a> AsMut<Vec<CowArcProfileEntry<'a>>> for ProfileStream<'a> {
+
     #[inline]
-    fn as_mut(&mut self) -> &mut Vec<CowArcProfileEntry<'a>> {
+    pub fn iter(&self) -> slice::Iter<'_, Line> {
+        self.inner.iter()
+    }
+
+    #[inline]
+    pub fn iter_mut(&mut self) -> slice::IterMut<'_, Line> {
+        self.inner.iter_mut()
+    }
+}
+impl AsMut<Vec<Line>> for ProfileStream {
+    #[inline]
+    fn as_mut(&mut self) -> &mut Vec<Line> {
         &mut self.inner
     }
 }
-impl<'a> AsMut<[CowArcProfileEntry<'a>]> for ProfileStream<'a> {
+impl AsMut<[Line]> for ProfileStream {
     #[inline]
-    fn as_mut(&mut self) -> &mut [CowArcProfileEntry<'a>] {
+    fn as_mut(&mut self) -> &mut [Line] {
         &mut self.inner[..]
     }
 }
-impl<'a> AsRef<Vec<CowArcProfileEntry<'a>>> for ProfileStream<'a> {
+impl AsRef<Vec<Line>> for ProfileStream {
     #[inline]
-    fn as_ref(&self) -> &Vec<CowArcProfileEntry<'a>> {
+    fn as_ref(&self) -> &Vec<Line> {
         &self.inner
     }
 }
-impl<'a> AsRef<[CowArcProfileEntry<'a>]> for ProfileStream<'a> {
+impl AsRef<[Line]> for ProfileStream {
     #[inline]
-    fn as_ref(&self) -> &[CowArcProfileEntry<'a>] {
+    fn as_ref(&self) -> &[Line] {
         &self.inner[..]
     }
 }
-impl<'a> Borrow<Vec<CowArcProfileEntry<'a>>> for ProfileStream<'a> {
+impl Borrow<Vec<Line>> for ProfileStream {
     #[inline]
-    fn borrow(&self) -> &Vec<CowArcProfileEntry<'a>> {
+    fn borrow(&self) -> &Vec<Line> {
         &self.inner
     }
 }
-impl<'a> Borrow<[CowArcProfileEntry<'a>]> for ProfileStream<'a> {
+impl Borrow<[Line]> for ProfileStream {
     #[inline]
-    fn borrow(&self) -> &[CowArcProfileEntry<'a>] {
+    fn borrow(&self) -> &[Line] {
         &self.inner[..]
     }
 }
-impl<'a> BorrowMut<Vec<CowArcProfileEntry<'a>>> for ProfileStream<'a> {
+impl BorrowMut<Vec<Line>> for ProfileStream {
     #[inline]
-    fn borrow_mut(&mut self) -> &mut Vec<CowArcProfileEntry<'a>> {
+    fn borrow_mut(&mut self) -> &mut Vec<Line> {
         &mut self.inner
     }
 }
-impl<'a> BorrowMut<[CowArcProfileEntry<'a>]> for ProfileStream<'a> {
+impl BorrowMut<[Line]> for ProfileStream {
     #[inline]
-    fn borrow_mut(&mut self) -> &mut [CowArcProfileEntry<'a>] {
+    fn borrow_mut(&mut self) -> &mut [Line] {
         &mut self.inner[..]
     }
 }
-impl fmt::Display for ProfileStream<'_> {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        for profile_entry in &self.inner {
-            write!(f, "{}", profile_entry)?;
-        }
-        Ok(())
-    }
-}
-impl<'a> Extend<CowArcProfileEntry<'a>> for ProfileStream<'a> {
+impl Extend<Line> for ProfileStream {
     #[inline]
     fn extend<T>(&mut self, iter: T)
     where
-        T: IntoIterator<Item = CowArcProfileEntry<'a>>,
+        T: IntoIterator<Item = Line>,
     {
         self.inner.extend(iter);
     }
 }
-impl<'a> FromIterator<CowArcProfileEntry<'a>> for ProfileStream<'a> {
+impl FromIterator<Line> for ProfileStream {
     #[inline]
     fn from_iter<T>(iter: T) -> Self
     where
-        T: IntoIterator<Item = CowArcProfileEntry<'a>>,
+        T: IntoIterator<Item = Line>,
     {
         Self {
             inner: Vec::from_iter(iter),
         }
     }
 }
-impl<'a> IntoIterator for ProfileStream<'a> {
-    type Item = CowArcProfileEntry<'a>;
-    type IntoIter = vec::IntoIter<CowArcProfileEntry<'a>>;
+impl IntoIterator for ProfileStream {
+    type Item = Line;
+    type IntoIter = vec::IntoIter<Line>;
 
     #[inline]
     fn into_iter(self) -> Self::IntoIter {
         self.inner.into_iter()
     }
 }
-impl<'a> IntoIterator for &'a ProfileStream<'a> {
-    type Item = &'a CowArcProfileEntry<'a>;
-    type IntoIter = slice::Iter<'a, CowArcProfileEntry<'a>>;
+impl<'a> IntoIterator for &'a ProfileStream {
+    type Item = &'a Line;
+    type IntoIter = slice::Iter<'a, Line>;
 
     #[inline]
     fn into_iter(self) -> Self::IntoIter {
         self.inner.iter()
     }
 }
-impl FromStr for ProfileStream<'_> {
+impl fmt::Display for ProfileStream {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        for Line { content, .. } in self.inner.iter().map(Borrow::borrow) {
+            write!(f, "{}", content)?;
+        }
+        Ok(())
+    }
+}
+impl FromStr for ProfileStream {
     type Err = Self;
 
-    /// Parses a string `s` to return a `ProfileStream`
-    ///
-    /// If there is one `ProfileEntry::_Invalid`, `Err(ProfileStream)` is returned,
-    /// otherwise `Ok(ProfileStream)`.
-    fn from_str(s: &str) -> Result<Self, Self> {
-        let mut vec = Vec::new();
-        let mut ret_as_err = false;
-        for line in s.lines() {
-            vec.push(CowArcProfileEntry::Owned(Arc::new(match line.parse() {
-                Ok(profile_entry) => profile_entry,
-                Err(invalid_profile_entry) => {
-                    ret_as_err = true;
-                    invalid_profile_entry
-                }
-            })));
-        }
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let mut valid = true;
+        let profile_stream = Self {
+            inner: s
+                .lines()
+                .map(|line| {
+                    line.parse::<Content>().unwrap_or_else(|invalid| {
+                        valid = false;
+                        invalid
+                    })
+                })
+                .map(Arc::new)
+                .enumerate()
+                .map(|(lineno, content)| (Some(lineno), content))
+                .map(|(lineno, content)| Line { lineno, content })
+                .collect(),
+        };
 
-        if ret_as_err {
-            Err(Self { inner: vec })
+        if valid {
+            Ok(profile_stream)
         } else {
-            Ok(Self { inner: vec })
+            Err(profile_stream)
         }
     }
 }
 
 //
-// ProfileEntry
+// Line
 //
 
-/// Unwrap a value if it is `Ok(T)` or `return Err(ProfileEntry::_Invalid($line.to_string())`
-///
-/// # Examples
-///
-/// ```
-/// fn make_frog() -> Result<Frog, Error> {
-///     let mut tadpole = Tadpole::new();
-///     for line in GUIDE {
-///         tadpole.push(unwrap_or_invalid!(apply(line));
-///     }
-///     Frog::from(tadpole)
-/// }
-/// ```
-macro_rules! unwrap_or_invalid {
-    ($res:expr, $line:ident) => {
-        match $res {
-            Ok(ok_val) => ok_val,
-            Err(_) => return Err(Self::_Invalid($line.to_string())),
-        }
-    };
+/// A profile-line
+#[derive(Clone, Debug, PartialEq)]
+pub struct Line {
+    /// The line number of this line if known
+    pub lineno: Option<usize>,
+    /// The content of this line
+    pub content: Arc<Content>,
+}
+impl AsRef<Content> for Line {
+    fn as_ref(&self) -> &Content {
+        &*self.content
+    }
 }
 
-/// A single entry (line) in a profile
+//
+// Content
+//
+
+/// The content of a profile-`Line`
+#[derive(Clone, Debug)]
+pub enum Content {
+    Blank,
+    Command(Command),
+    Comment(String),
+    Conditional(Conditional),
+    Invalid(String, Arc<Error>),
+}
+impl PartialEq<Self> for Content {
+    fn eq(&self, other: &Self) -> bool {
+        use Content::*;
+        match (self, other) {
+            (Blank, Blank) => true,
+            (Command(comm1), Command(comm2)) if comm1 == comm2 => true,
+            (Comment(cmnt1), Comment(cmnt2)) if cmnt1 == cmnt2 => true,
+            (Conditional(cond1), Conditional(cond2)) if cond1 == cond2 => true,
+            (Invalid(line1, _), Invalid(line2, _)) if line1 == line2 => true,
+            _ => false,
+        }
+    }
+}
+impl fmt::Display for Content {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::Blank => writeln!(f),
+            Self::Command(command) => writeln!(f, "{}", command),
+            Self::Comment(comment) => writeln!(f, "#{}", comment),
+            Self::Conditional(conditional) => writeln!(f, "{}", conditional),
+            Self::Invalid(invalid, _) => writeln!(f, "{}", invalid),
+        }
+    }
+}
+impl FromStr for Content {
+    type Err = Self;
+
+    fn from_str(line: &str) -> Result<Self, Self::Err> {
+        if line == "" {
+            Ok(Self::Blank)
+        } else if line.starts_with('#') {
+            Ok(Self::Comment(line[1..].to_string()))
+        } else if line.starts_with('?') {
+            match line.parse() {
+                Ok(cond) => Ok(Self::Conditional(cond)),
+                Err(err) => Err(Self::Invalid(line.to_string(), Arc::new(err))),
+            }
+        } else {
+            match line.parse() {
+                Ok(comm) => Ok(Self::Command(comm)),
+                Err(err) => Err(Self::Invalid(line.to_string(), Arc::new(err))),
+            }
+        }
+    }
+}
+
+//
+// Command
+//
+
+/// A firejail command
 #[non_exhaustive]
 #[derive(Clone, Debug, Hash, PartialEq, Eq)]
-pub enum ProfileEntry {
+pub enum Command {
     AllowDebuggers,
     Allusers,
     Apparmor,
     Blacklist(String),
-    /// A empty line
-    Blank,
     Caps,
     CapsDropAll,
     CapsDrop(Vec<Capabilities>),
     CapsKeep(Vec<Capabilities>),
-    /// A comment (without the leading `#`).
-    /// This variant might change in the future to something like `Comment(Comment::Foo(String))`
-    /// to easier work with profile headers.
-    Comment(String),
     DBusUser(DBusPolicy),
     DBusUserOwn(String),
     DBusUserTalk(String),
@@ -323,101 +382,87 @@ pub enum ProfileEntry {
     WritableVar,
     WritableVarLog,
     X11None,
-    /// An invalid line
-    _Invalid(String),
-    /// A unknow line, likely not implemented yet.
-    /// This variant will be removed in the future.
-    _Unknow(String),
 }
-impl fmt::Display for ProfileEntry {
+impl fmt::Display for Command {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        use ProfileEntry::*;
+        use Command::*;
         match self {
-            AllowDebuggers => writeln!(f, "allow-debuggers")?,
-            Allusers => writeln!(f, "allusers")?,
-            Apparmor => writeln!(f, "apparmor")?,
-            Blacklist(path) => writeln!(f, "blacklist {}", path)?,
-            Blank => writeln!(f)?,
-            Caps => writeln!(f, "caps")?,
-            CapsDropAll => writeln!(f, "caps.drop all")?,
-            CapsDrop(caps) => writeln!(f, "caps.drop {}", join(',', caps))?,
-            CapsKeep(caps) => writeln!(f, "caps.keep {}", join(',', caps))?,
-            Comment(comment) => writeln!(f, "#{}", comment)?,
-            DBusUser(policy) => writeln!(f, "dbus-user {}", policy)?,
-            DBusUserOwn(name) => writeln!(f, "dbus-user.own {}", name)?,
-            DBusUserTalk(name) => writeln!(f, "dbus-user.talk {}", name)?,
-            DBusSystem(policy) => writeln!(f, "dbus-system {}", policy)?,
-            DBusSystemOwn(name) => writeln!(f, "dbus-system.own {}", name)?,
-            DBusSystemTalk(name) => writeln!(f, "dbus-system.talk {}", name)?,
-            DisableMnt => writeln!(f, "disable-mnt")?,
-            Hostname(hostname) => writeln!(f, "hostname {}", hostname)?,
-            Ignore(profile_line) => writeln!(f, "ignore {}", profile_line)?,
-            Include(profile) => writeln!(f, "include {}", profile)?,
-            IpcNamespace => writeln!(f, "ipc-namespace")?,
-            JoinOrStart(name) => writeln!(f, "join-or-start {}", name)?,
-            MachineId => writeln!(f, "machine-id")?,
-            MemoryDenyWriteExecute => writeln!(f, "memory-deny-write-execute")?,
-            Mkdir(path) => writeln!(f, "mkdir {}", path)?,
-            Mkfile(path) => writeln!(f, "mkfile {}", path)?,
-            Name(name) => writeln!(f, "name {}", name)?,
-            Netfilter => writeln!(f, "netfilter")?,
-            NetNone => writeln!(f, "net none")?,
-            No3d => writeln!(f, "no3d")?,
-            Noblacklist(path) => writeln!(f, "noblacklist {}", path)?,
-            Nodvd => writeln!(f, "nodvd")?,
-            Noexec(path) => writeln!(f, "noexec {}", path)?,
-            Nogroups => writeln!(f, "nogroups")?,
-            Nonewprivs => writeln!(f, "nonewprivs")?,
-            Noroot => writeln!(f, "noroot")?,
-            Nosound => writeln!(f, "nosound")?,
-            Notv => writeln!(f, "notv")?,
-            Nou2f => writeln!(f, "nou2f")?,
-            Novideo => writeln!(f, "novideo")?,
-            Nowhitelist(path) => writeln!(f, "nowhitelist {}", path)?,
-            Private(None) => writeln!(f, "private")?,
-            Private(Some(path)) => writeln!(f, "private {}", path)?,
-            PrivateBin(bins) => writeln!(f, "private-bin {}", bins.join(","))?,
-            PrivateCache => writeln!(f, "private-cache")?,
-            PrivateCwd(path) => writeln!(f, "private-cwd {}", path)?,
-            PrivateDev => writeln!(f, "private-dev")?,
-            PrivateEtc(files) => writeln!(f, "private-etc {}", files.join(","))?,
-            PrivateLib(None) => writeln!(f, "private-lib")?,
-            PrivateLib(Some(files)) => writeln!(f, "private-lib {}", files.join(","))?,
-            PrivateOpt(files) => writeln!(f, "private-opt {}", files.join(","))?,
-            PrivateSrv(files) => writeln!(f, "private-srv {}", files.join(","))?,
-            PrivateTmp => writeln!(f, "private-tmp")?,
-            Protocol(protocols) => writeln!(f, "protocol {}", join(",", protocols))?,
-            Quiet => writeln!(f, "quiet")?,
-            ReadOnly(path) => writeln!(f, "read-only {}", path)?,
-            ReadWrite(path) => writeln!(f, "read-write {}", path)?,
-            Seccomp(None) => writeln!(f, "seccomp")?,
-            Seccomp(Some(syscalls)) => writeln!(f, "seccomp {}", syscalls.join(","))?,
-            SeccompBlockSecondary => writeln!(f, "seccomp.block-secondary")?,
-            SeccompDrop(syscalls) => writeln!(f, "seccomp.drop {}", syscalls.join(","))?,
-            ShellNone => writeln!(f, "shell none")?,
-            Tracelog => writeln!(f, "tracelog")?,
-            Whitelist(path) => writeln!(f, "whitelist {}", path)?,
-            WritableRunUser => writeln!(f, "writable-run-user")?,
-            WritableVar => writeln!(f, "writable-var")?,
-            WritableVarLog => writeln!(f, "writable-var-log")?,
-            X11None => writeln!(f, "x11 none")?,
-            _Invalid(_line) => unimplemented!(), // writeln!(f, "#INVALID!{}", line)?,
-            _Unknow(profile_line) => writeln!(f, "{}", profile_line)?,
+            AllowDebuggers => write!(f, "allow-debuggers")?,
+            Allusers => write!(f, "allusers")?,
+            Apparmor => write!(f, "apparmor")?,
+            Blacklist(path) => write!(f, "blacklist {}", path)?,
+            Caps => write!(f, "caps")?,
+            CapsDropAll => write!(f, "caps.drop all")?,
+            CapsDrop(caps) => write!(f, "caps.drop {}", join(',', caps))?,
+            CapsKeep(caps) => write!(f, "caps.keep {}", join(',', caps))?,
+            DBusUser(policy) => write!(f, "dbus-user {}", policy)?,
+            DBusUserOwn(name) => write!(f, "dbus-user.own {}", name)?,
+            DBusUserTalk(name) => write!(f, "dbus-user.talk {}", name)?,
+            DBusSystem(policy) => write!(f, "dbus-system {}", policy)?,
+            DBusSystemOwn(name) => write!(f, "dbus-system.own {}", name)?,
+            DBusSystemTalk(name) => write!(f, "dbus-system.talk {}", name)?,
+            DisableMnt => write!(f, "disable-mnt")?,
+            Hostname(hostname) => write!(f, "hostname {}", hostname)?,
+            Ignore(profile_line) => write!(f, "ignore {}", profile_line)?,
+            Include(profile) => write!(f, "include {}", profile)?,
+            IpcNamespace => write!(f, "ipc-namespace")?,
+            JoinOrStart(name) => write!(f, "join-or-start {}", name)?,
+            MachineId => write!(f, "machine-id")?,
+            MemoryDenyWriteExecute => write!(f, "memory-deny-write-execute")?,
+            Mkdir(path) => write!(f, "mkdir {}", path)?,
+            Mkfile(path) => write!(f, "mkfile {}", path)?,
+            Name(name) => write!(f, "name {}", name)?,
+            Netfilter => write!(f, "netfilter")?,
+            NetNone => write!(f, "net none")?,
+            No3d => write!(f, "no3d")?,
+            Noblacklist(path) => write!(f, "noblacklist {}", path)?,
+            Nodvd => write!(f, "nodvd")?,
+            Noexec(path) => write!(f, "noexec {}", path)?,
+            Nogroups => write!(f, "nogroups")?,
+            Nonewprivs => write!(f, "nonewprivs")?,
+            Noroot => write!(f, "noroot")?,
+            Nosound => write!(f, "nosound")?,
+            Notv => write!(f, "notv")?,
+            Nou2f => write!(f, "nou2f")?,
+            Novideo => write!(f, "novideo")?,
+            Nowhitelist(path) => write!(f, "nowhitelist {}", path)?,
+            Private(None) => write!(f, "private")?,
+            Private(Some(path)) => write!(f, "private {}", path)?,
+            PrivateBin(bins) => write!(f, "private-bin {}", bins.join(","))?,
+            PrivateCache => write!(f, "private-cache")?,
+            PrivateCwd(path) => write!(f, "private-cwd {}", path)?,
+            PrivateDev => write!(f, "private-dev")?,
+            PrivateEtc(files) => write!(f, "private-etc {}", files.join(","))?,
+            PrivateLib(None) => write!(f, "private-lib")?,
+            PrivateLib(Some(files)) => write!(f, "private-lib {}", files.join(","))?,
+            PrivateOpt(files) => write!(f, "private-opt {}", files.join(","))?,
+            PrivateSrv(files) => write!(f, "private-srv {}", files.join(","))?,
+            PrivateTmp => write!(f, "private-tmp")?,
+            Protocol(protocols) => write!(f, "protocol {}", join(",", protocols))?,
+            Quiet => write!(f, "quiet")?,
+            ReadOnly(path) => write!(f, "read-only {}", path)?,
+            ReadWrite(path) => write!(f, "read-write {}", path)?,
+            Seccomp(None) => write!(f, "seccomp")?,
+            Seccomp(Some(syscalls)) => write!(f, "seccomp {}", syscalls.join(","))?,
+            SeccompBlockSecondary => write!(f, "seccomp.block-secondary")?,
+            SeccompDrop(syscalls) => write!(f, "seccomp.drop {}", syscalls.join(","))?,
+            ShellNone => write!(f, "shell none")?,
+            Tracelog => write!(f, "tracelog")?,
+            Whitelist(path) => write!(f, "whitelist {}", path)?,
+            WritableRunUser => write!(f, "writable-run-user")?,
+            WritableVar => write!(f, "writable-var")?,
+            WritableVarLog => write!(f, "writable-var-log")?,
+            X11None => write!(f, "x11 none")?,
             //_ => unimplemented!(),
         }
         Ok(())
     }
 }
-impl FromStr for ProfileEntry {
-    type Err = Self;
+impl FromStr for Command {
+    type Err = Error;
 
-    /// Parses a string `line` to return a value of this type.
-    ///
-    /// # Errors
-    ///
-    /// `ProfileEntry::_Invalid(line)`
-    fn from_str(line: &str) -> Result<Self, Self> {
-        use ProfileEntry::*;
+    fn from_str(line: &str) -> Result<Self, Self::Err> {
+        use Command::*;
 
         Ok(if line == "allow-debuggers" {
             AllowDebuggers
@@ -427,24 +472,24 @@ impl FromStr for ProfileEntry {
             Apparmor
         } else if line.starts_with("blacklist ") {
             Blacklist(line[10..].to_string())
-        } else if line == "" {
-            Blank
         } else if line == "caps" {
             Caps
         } else if line == "caps.drop all" {
             CapsDropAll
         } else if line.starts_with("caps.drop ") {
-            CapsDrop(unwrap_or_invalid!(
-                line[10..].split(',').map(str::parse).collect(),
-                line
-            ))
+            CapsDrop(
+                line[10..]
+                    .split(',')
+                    .map(str::parse)
+                    .collect::<Result<_, _>>()?,
+            )
         } else if line.starts_with("caps.keep ") {
-            CapsKeep(unwrap_or_invalid!(
-                line[10..].split(',').map(str::parse).collect(),
-                line
-            ))
-        } else if line.starts_with('#') {
-            Comment(line[1..].to_string())
+            CapsKeep(
+                line[10..]
+                    .split(',')
+                    .map(str::parse)
+                    .collect::<Result<_, _>>()?,
+            )
         } else if line == "dbus-user filter" {
             DBusUser(DBusPolicy::Filter)
         } else if line == "dbus-user none" {
@@ -536,13 +581,12 @@ impl FromStr for ProfileEntry {
         } else if line == "private-tmp" {
             PrivateTmp
         } else if line.starts_with("protocol ") {
-            Protocol(unwrap_or_invalid!(
+            Protocol(
                 line[9..]
                     .split(',')
                     .map(FromStr::from_str)
-                    .collect_results_to_vec(),
-                line
-            ))
+                    .collect::<Result<_, _>>()?,
+            )
         } else if line == "quiet" {
             Quiet
         } else if line.starts_with("read-only ") {
@@ -572,26 +616,67 @@ impl FromStr for ProfileEntry {
         } else if line == "x11 none" {
             X11None
         } else {
-            _Unknow(line.to_string())
+            return Err(anyhow!("unknow or invalid line"));
         })
     }
 }
-impl PartialEq<CowArcProfileEntry<'_>> for ProfileEntry {
-    #[inline]
-    fn eq(&self, other: &CowArcProfileEntry) -> bool {
-        PartialEq::eq(self, &***other)
+
+//
+// Conditional
+//
+
+/// A condition with an conditional command
+#[non_exhaustive]
+#[derive(Clone, Debug, Hash, PartialEq, Eq)]
+pub enum Conditional {
+    BrowserAllowDrm(Command),
+    BrowserDisableU2f(Command),
+    HasAppimage(Command),
+    HasNet(Command),
+    HasNodbus(Command),
+    HasNosound(Command),
+    HasX11(Command),
+}
+impl FromStr for Conditional {
+    type Err = Error;
+
+    fn from_str(line: &str) -> Result<Self, Self::Err> {
+        let mut splited_line = line.splitn(2, ' ');
+        let con = splited_line.next().unwrap();
+        let cmd = splited_line
+            .next()
+            .ok_or_else(|| anyhow!("Condition has no value"))?;
+
+        if con == "?BROWSER_ALLOW_DRM:" {
+            Ok(Self::BrowserAllowDrm(cmd.parse()?))
+        } else if con == "?BROWSER_DISABLE_U2F:" {
+            Ok(Self::BrowserDisableU2f(cmd.parse()?))
+        } else if con == "?HAS_APPIMAGE:" {
+            Ok(Self::HasAppimage(cmd.parse()?))
+        } else if con == "?HAS_NET:" {
+            Ok(Self::HasNet(cmd.parse()?))
+        } else if con == "?HAS_NODBUS:" {
+            Ok(Self::HasNodbus(cmd.parse()?))
+        } else if con == "?HAS_NOSOUND:" {
+            Ok(Self::HasNosound(cmd.parse()?))
+        } else if con == "?HAS_X11:" {
+            Ok(Self::HasX11(cmd.parse()?))
+        } else {
+            Err(anyhow!("unknow condition"))
+        }
     }
 }
-impl PartialEq<ProfileEntry> for CowArcProfileEntry<'_> {
-    #[inline]
-    fn eq(&self, other: &ProfileEntry) -> bool {
-        PartialEq::eq(&***self, other)
-    }
-}
-impl Borrow<ProfileEntry> for CowArcProfileEntry<'_> {
-    #[inline]
-    fn borrow(&self) -> &ProfileEntry {
-        &***self
+impl fmt::Display for Conditional {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::BrowserAllowDrm(cmd) => write!(f, "?BROWSER_ALLOW_DRM: {}", cmd),
+            Self::BrowserDisableU2f(cmd) => write!(f, "?BROWSER_DISABLE_U2F: {}", cmd),
+            Self::HasAppimage(cmd) => write!(f, "?HAS_APPIMAGE: {}", cmd),
+            Self::HasNet(cmd) => write!(f, "?HAS_NET: {}", cmd),
+            Self::HasNodbus(cmd) => write!(f, "?HAS_NODBUS: {}", cmd),
+            Self::HasNosound(cmd) => write!(f, "?HAS_NOSOUND: {}", cmd),
+            Self::HasX11(cmd) => write!(f, "?HAS_X11: {}", cmd),
+        }
     }
 }
 
@@ -600,44 +685,26 @@ impl Borrow<ProfileEntry> for CowArcProfileEntry<'_> {
 //
 
 /// A `Protocol` from firejails `protocol` command
-// TODO: PartialOrd
-#[derive(Copy, Clone, Debug, Eq, Hash, PartialEq)]
+#[derive(Copy, Clone, Debug, Hash, PartialEq, Eq, PartialOrd, Ord)]
 pub enum Protocol {
     Unix,
     Inet,
     Inet6,
     Netlink,
     Packet,
+    Bluetooth,
 }
-/// Create a new `Protocol` instance from `str`
-///
-/// # Examples
-///
-/// ```
-/// assert_eq!(
-///     Protocol::from_str("unix")?,
-///     Protocol::Unix,
-/// );
-/// ```
-///
-/// ```should_panic
-/// "invalid".parse::<Protocol>().unwrap(); // This will fail!
-/// ```
 impl FromStr for Protocol {
-    type Err = anyhow::Error;
+    type Err = Error;
 
-    /// Parses a str to a Protocol
-    ///
-    /// # Errors
-    ///
-    /// `anyhow::anyhow!("This is not a valid protocol")`
-    fn from_str(proto: &str) -> Result<Self, anyhow::Error> {
+    fn from_str(proto: &str) -> Result<Self, Self::Err> {
         match proto {
             "unix" => Ok(Self::Unix),
             "inet" => Ok(Self::Inet),
             "inet6" => Ok(Self::Inet6),
             "netlink" => Ok(Self::Netlink),
             "packet" => Ok(Self::Packet),
+            "bluetooth" => Ok(Self::Bluetooth),
             _ => Err(anyhow!("This is not a valid protocol")),
         }
     }
@@ -653,6 +720,7 @@ impl fmt::Display for Protocol {
                 Self::Inet6 => "inet6",
                 Self::Netlink => "netlink",
                 Self::Packet => "packet",
+                Self::Bluetooth => "bluetooth",
             },
         )
     }
@@ -751,9 +819,9 @@ impl fmt::Display for Capabilities {
     }
 }
 impl FromStr for Capabilities {
-    type Err = anyhow::Error;
+    type Err = Error;
 
-    fn from_str(s: &str) -> Result<Self, anyhow::Error> {
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
         use Capabilities::*;
         match s {
             "audit_control" => Ok(AuditControl),
@@ -806,14 +874,12 @@ impl FromStr for Capabilities {
 /// DBus Policy
 #[derive(Copy, Clone, Debug, Eq, Hash, PartialEq)]
 pub enum DBusPolicy {
-    Allow,
     Filter,
     None,
 }
 impl fmt::Display for DBusPolicy {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Self::Allow => unimplemented!("fmt::Display for DBusPolicy::Allow is not implemented yet. It does not exists in profiles."),
             Self::Filter => write!(f, "filter"),
             Self::None => write!(f, "none"),
         }

@@ -83,11 +83,34 @@ bitflags! {
     }
 }
 impl ProfileFlags {
+    #[deprecated(note = "Use ProfileFlags::default().with() instead")]
     /// Create a new instance with the default flags and the provided additional flags
     pub fn default_with(additional_flags: Self) -> Self {
         let mut flags = Self::default();
         flags.insert(additional_flags);
         flags
+    }
+
+    /// Add flag `other` to self and return the result
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// ProfileFlags::default().with(ProfileFlags::READ)
+    /// ```
+    pub fn with(self, other: Self) -> Self {
+        self | other
+    }
+
+    /// Remove flag `other` from self and return the result
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// ProfileFlags::default().without(ProfileFlags::LOOKUP_CWD
+    /// ```
+    pub fn without(self, other: Self) -> Self {
+        self & !other
     }
 }
 /// Default is `LOOKUP_CWD`, `LOOKUP_USER` and `LOOKUP_SYSTEM`
@@ -378,5 +401,26 @@ impl From<Profile<'_>> for ErrorContext {
                 },
             ),
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn profile_flags_with() {
+        assert_eq!(
+            ProfileFlags::default().with(ProfileFlags::READ),
+            ProfileFlags::default() | ProfileFlags::READ,
+        );
+    }
+
+    #[test]
+    fn profile_flags_without() {
+        assert_eq!(
+            ProfileFlags::default().without(ProfileFlags::LOOKUP_CWD),
+            ProfileFlags::default() & !ProfileFlags::LOOKUP_CWD,
+        );
     }
 }

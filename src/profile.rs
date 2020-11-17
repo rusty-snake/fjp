@@ -388,7 +388,7 @@ impl Display for ErrorContext {
     }
 }
 impl From<Profile<'_>> for ErrorContext {
-    fn from(profile: Profile) -> Self {
+    fn from(profile: Profile<'_>) -> Self {
         Self {
             raw_name: profile.raw_name.into_owned(),
             full_name: profile.full_name.into_owned(),

@@ -57,7 +57,7 @@ fn enable_user() {
         .unwrap_or_else(|err| error!("Rename failed: {}", err));
 }
 
-fn enable_profile(profile: &Profile) {
+fn enable_profile(profile: &Profile<'_>) {
     let disabled_profile = DISABLED_DIR.get_profile_path(profile.full_name());
     debug!("disabled profile: {}", disabled_profile.to_string_lossy());
 

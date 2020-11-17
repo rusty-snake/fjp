@@ -78,7 +78,7 @@ fn list() -> IoResult<()> {
     Ok(())
 }
 
-fn disable_profile(profile: &Profile) {
+fn disable_profile(profile: &Profile<'_>) {
     let enabled_profile;
     if let Some(path) = profile.path() {
         enabled_profile = path;

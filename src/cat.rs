@@ -17,15 +17,11 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-use crate::{
-    fatal,
-    utils::{find_profile, get_name1, ColoredText},
-};
+use crate::profile::{Profile, ProfileFlags};
+use crate::{fatal, utils::ColoredText};
 use clap::ArgMatches;
 use log::{debug, error, warn};
-use std::fs::read_to_string;
 use std::io;
-use std::path::PathBuf;
 use std::process::{Child, Command, Stdio};
 use termcolor::Color;
 
@@ -33,12 +29,6 @@ use termcolor::Color;
 struct Options {
     show_locals: bool,
     show_redirects: bool,
-}
-
-#[derive(Debug)]
-struct Profile {
-    path: PathBuf,
-    data: String,
 }
 
 pub fn start(cli: &ArgMatches<'_>) {
@@ -68,19 +58,23 @@ pub fn start(cli: &ArgMatches<'_>) {
         Box::new(io::stdout())
     };
 
-    let name = get_name1(cli.value_of("PROFILE_NAME").unwrap());
-    let path = find_profile(&name).unwrap_or_else(|| fatal!("Can not find {}.", &name));
-    let data = read_to_string(&path)
-        .unwrap_or_else(|e| fatal!("Failed to open {}: {}", path.to_string_lossy(), e));
-
-    let profile = Profile { path, data };
-
     let opts = Options {
         show_locals: !cli.is_present("no-locals"),
         show_redirects: !cli.is_present("no-redirects"),
     };
+    let name = cli.value_of("PROFILE_NAME").unwrap();
+    let profile_flags = ProfileFlags::default_with(ProfileFlags::READ);
 
-    process(&profile, &opts, &mut output, 0);
+    match Profile::new(name, profile_flags) {
+        Ok(p) => {
+            if let Some(content) = &p.raw_data() {
+                process(&p, &content, &opts, &mut output, 0);
+            }
+        }
+        Err(e) => {
+            error!("Couldn't Read Profile. {}", e);
+        }
+    };
 
     drop(output); // We need to drop output here, otherwise we would have two mutable references.
     if let Some(ref mut child) = child {
@@ -88,13 +82,19 @@ pub fn start(cli: &ArgMatches<'_>) {
     }
 }
 
-fn process<W: io::Write>(profile: &Profile, opts: &Options, output: &mut W, mut depth: u8) {
+fn process<W: io::Write>(
+    profile: &Profile,
+    content: &str,
+    opts: &Options,
+    output: &mut W,
+    mut depth: u8,
+) {
     if depth >= 16 {
         fatal!("To many include levels");
     }
     depth += 1;
 
-    let [locals, profiles] = parse(&profile.data);
+    let [locals, profiles] = parse(&content);
 
     if opts.show_locals {
         if let Some(locals) = locals {
@@ -102,7 +102,7 @@ fn process<W: io::Write>(profile: &Profile, opts: &Options, output: &mut W, mut 
         }
     }
 
-    show_file(profile, output);
+    show_file(profile, content, output);
 
     if opts.show_redirects {
         if let Some(profiles) = profiles {
@@ -111,11 +111,11 @@ fn process<W: io::Write>(profile: &Profile, opts: &Options, output: &mut W, mut 
     }
 }
 
-fn parse(data: &str) -> [Option<Vec<String>>; 2] {
+fn parse(content: &str) -> [Option<Vec<String>>; 2] {
     let mut local = Vec::new();
     let mut profile = Vec::new();
 
-    for line in data.lines() {
+    for line in content.lines() {
         if line.starts_with("include ") {
             if line.ends_with(".local") {
                 local.push(unsafe { line.get_unchecked(8..) }.to_string());
@@ -135,17 +135,17 @@ fn parse(data: &str) -> [Option<Vec<String>>; 2] {
     ]
 }
 
-fn show_file<W: io::Write>(profile: &Profile, output: &mut W) {
+fn show_file<W: io::Write>(profile: &Profile, content: &str, output: &mut W) {
     output
         .write_all(
             ColoredText::new(
                 Color::Blue,
-                &format!("# {}:\n", profile.path.to_string_lossy()),
+                &format!("# {}:\n", profile.path().unwrap().to_string_lossy()),
             )
             .as_bytes(),
         )
         .unwrap();
-    output.write_all(profile.data.as_bytes()).unwrap();
+    output.write_all(content.as_bytes()).unwrap();
 }
 
 fn show_locals<W: io::Write>(locals: &[String], _opts: &Options, output: &mut W) {
@@ -154,41 +154,35 @@ fn show_locals<W: io::Write>(locals: &[String], _opts: &Options, output: &mut W)
         .filter(|&name| {
             name != "globals.local" && name != "pre-globals.local" && name != "post-globals.local"
         })
-        .filter_map(|name| match find_profile(name) {
-            Some(path) => Some(path),
-            None => {
-                warn!("{} could not be found.", name);
-                None
+        .filter_map(|name| {
+            let profile_flags = ProfileFlags::default_with(ProfileFlags::READ);
+            match Profile::new(name, profile_flags) {
+                Ok(profile) => Some(profile),
+                Err(err) => {
+                    warn!("Couldn't Read locals. {}", err);
+                    None
+                }
             }
         })
-        .filter_map(|path| match read_to_string(&path) {
-            Ok(data) => Some(Profile { path, data }),
-            Err(err) => {
-                error!("Failed to open {}: {}", path.to_string_lossy(), err);
-                None
+        .for_each(|profile| {
+            if let Some(content) = profile.raw_data() {
+                show_file(&profile, &content, output);
             }
-        })
-        .for_each(|profile| show_file(&profile, output));
+        });
 }
 
 fn show_profiles<W: io::Write>(profiles: &[String], opts: &Options, output: &mut W, depth: u8) {
     for name in profiles {
-        let path = match find_profile(name) {
-            Some(path) => path,
-            None => {
-                error!("Can not find {}.", name);
-                continue;
+        let profile_flags = ProfileFlags::default_with(ProfileFlags::READ);
+        match Profile::new(name, profile_flags) {
+            Ok(p) => {
+                if let Some(content) = p.raw_data() {
+                    process(&p, &content, opts, output, depth);
+                }
+            }
+            Err(e) => {
+                error!("Couldn't Read profile. {}", e);
             }
         };
-
-        let data = match read_to_string(&path) {
-            Ok(data) => data,
-            Err(err) => {
-                error!("Failed to read {}: {}", path.to_string_lossy(), err);
-                continue;
-            }
-        };
-
-        process(&Profile { path, data }, opts, output, depth);
     }
 }

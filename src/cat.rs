@@ -72,7 +72,7 @@ pub fn start(cli: &ArgMatches<'_>) {
             }
         }
         Err(e) => {
-            error!("{}", e);
+            error!("Couldn't Read Profile. {}", e);
         }
     };
 
@@ -159,7 +159,7 @@ fn show_locals<W: io::Write>(locals: &[String], _opts: &Options, output: &mut W)
             match Profile::new(name, profile_flags) {
                 Ok(profile) => Some(profile),
                 Err(err) => {
-                    warn!("{}", err);
+                    warn!("Couldn't Read locals. {}", err);
                     None
                 }
             }
@@ -181,7 +181,7 @@ fn show_profiles<W: io::Write>(profiles: &[String], opts: &Options, output: &mut
                 }
             }
             Err(e) => {
-                error!("{}", e);
+                error!("Couldn't Read profile. {}", e);
             }
         };
     }

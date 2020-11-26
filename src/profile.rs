@@ -105,7 +105,7 @@ impl ProfileFlags {
     /// # Examples
     ///
     /// ```
-    /// ProfileFlags::default().without(ProfileFlags::LOOKUP_CWD
+    /// ProfileFlags::default().without(ProfileFlags::LOOKUP_CWD)
     /// ```
     pub fn without(self, other: Self) -> Self {
         self & !other
@@ -163,7 +163,7 @@ impl<'a> Profile<'a> {
     ///
     /// # Panics
     ///
-    /// Panics if `name` if `.` or `..`.
+    /// Panics if `name` is `.` or `..`.
     ///
     /// # Examples
     ///

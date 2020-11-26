@@ -54,7 +54,7 @@ find_cargo() {
   # Using `command -v cargo` here instead of `which cargo` as shellcheck suggest,
   # causes an infinitiy loop, because `command -v` finds the `cargo` function
   # from below if `find_cargo` is started after the declatarion of cargo.
-  # which always finds the binary on the disk.
+  # `which` always finds the binary on the disk.
   # shellcheck disable=SC2230
   cargo=$(which cargo 2>/dev/null)
   if [ -z "$cargo" ]; then

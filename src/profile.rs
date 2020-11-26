@@ -81,14 +81,6 @@ bitflags! {
     }
 }
 impl ProfileFlags {
-    #[deprecated(note = "Use ProfileFlags::default().with() instead")]
-    /// Create a new instance with the default flags and the provided additional flags
-    pub fn default_with(additional_flags: Self) -> Self {
-        let mut flags = Self::default();
-        flags.insert(additional_flags);
-        flags
-    }
-
     /// Add flag `other` to self and return the result
     ///
     /// # Examples

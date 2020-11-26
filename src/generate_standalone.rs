@@ -42,7 +42,7 @@ pub fn start(cli: &ArgMatches<'_>) {
 
     let profile = Profile::new(
         cli.value_of("PROFILE_NAME").unwrap(),
-        ProfileFlags::default_with(ProfileFlags::READ),
+        ProfileFlags::default().with(ProfileFlags::READ),
     )
     .unwrap_or_else(|err| {
         if let ProfileError::ReadError {
@@ -79,7 +79,7 @@ fn process(
                 write_lined!(line, standalone_profile);
             } else {
                 ensure!(recusion_level <= 16, "To many include levels");
-                match Profile::new(&line[8..], ProfileFlags::default_with(ProfileFlags::READ)) {
+                match Profile::new(&line[8..], ProfileFlags::default().with(ProfileFlags::READ)) {
                     Ok(profile) => process(
                         profile.raw_data().unwrap(),
                         standalone_profile,

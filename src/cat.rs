@@ -63,7 +63,7 @@ pub fn start(cli: &ArgMatches<'_>) {
         show_redirects: !cli.is_present("no-redirects"),
     };
     let name = cli.value_of("PROFILE_NAME").unwrap();
-    let profile_flags = ProfileFlags::default_with(ProfileFlags::READ);
+    let profile_flags = ProfileFlags::default().with(ProfileFlags::READ);
 
     match Profile::new(name, profile_flags) {
         Ok(p) => {
@@ -155,7 +155,7 @@ fn show_locals<W: io::Write>(locals: &[String], _opts: &Options, output: &mut W)
             name != "globals.local" && name != "pre-globals.local" && name != "post-globals.local"
         })
         .filter_map(|name| {
-            let profile_flags = ProfileFlags::default_with(ProfileFlags::READ);
+            let profile_flags = ProfileFlags::default().with(ProfileFlags::READ);
             match Profile::new(name, profile_flags) {
                 Ok(profile) => Some(profile),
                 Err(err) => {
@@ -173,7 +173,7 @@ fn show_locals<W: io::Write>(locals: &[String], _opts: &Options, output: &mut W)
 
 fn show_profiles<W: io::Write>(profiles: &[String], opts: &Options, output: &mut W, depth: u8) {
     for name in profiles {
-        let profile_flags = ProfileFlags::default_with(ProfileFlags::READ);
+        let profile_flags = ProfileFlags::default().with(ProfileFlags::READ);
         match Profile::new(name, profile_flags) {
             Ok(p) => {
                 if let Some(content) = p.raw_data() {

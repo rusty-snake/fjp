@@ -24,14 +24,12 @@
 
 use crate::location::Location;
 use crate::{SYSTEM_PROFILE_DIR, USER_PROFILE_DIR};
-use anyhow::anyhow;
 use bitflags::bitflags;
 use lazy_static::lazy_static;
 use log::{debug, warn};
 use std::borrow::Cow;
 use std::collections::HashMap;
 use std::error::Error as StdError;
-use std::fmt::{Display, Formatter, Result as FmtResult};
 use std::fs::{read_dir, read_to_string};
 use std::io;
 use std::path::{Path, PathBuf};
@@ -161,8 +159,7 @@ impl<'a> Profile<'a> {
     ///
     /// # Errors
     ///
-    /// This function can ATM only return an error if `ProfileFlags::READ` was give.
-    /// This error can be downcasted to `std::io::Error` or [`ErrorContext`].
+    /// - [`Error::ReadError`]
     ///
     /// # Panics
     ///
@@ -186,7 +183,7 @@ impl<'a> Profile<'a> {
     /// ```
     ///
     /// [`ErrorContext`]: struct.ErrorContext.html
-    pub fn new(name: &'a str, flags: ProfileFlags) -> anyhow::Result<Self> {
+    pub fn new(name: &'a str, flags: ProfileFlags) -> Result<Self, Error> {
         let raw_name = Cow::Borrowed(name);
         let full_name = complete_name(name);
 
@@ -221,7 +218,12 @@ impl<'a> Profile<'a> {
         if flags.contains(ProfileFlags::READ) {
             let res = new_profile.read();
             if let Err(err) = res {
-                return Err(anyhow::Error::new(err).context(ErrorContext::from(new_profile)));
+                return Err(Error::ReadError {
+                    raw_name: new_profile.raw_name.to_string(),
+                    full_name: new_profile.full_name.to_string(),
+                    path: new_profile.path.unwrap_or_default(),
+                    source: Box::new(err),
+                });
             }
         }
 
@@ -252,6 +254,11 @@ impl<'a> Profile<'a> {
     ///
     /// This will re-read it if it is already readed.
     ///
+    /// # Errors
+    ///
+    /// - [`Error::NoPath`]
+    /// - [`Error::Io`]
+    ///
     /// # Examples
     ///
     /// ```
@@ -263,16 +270,12 @@ impl<'a> Profile<'a> {
     ///
     /// # Ok::<(), Box<dyn std::error::Error>>(())
     /// ```
-    pub fn read(&mut self) -> io::Result<()> {
-        use io::{Error, ErrorKind};
+    pub fn read(&mut self) -> Result<(), Error> {
         if let Some(ref path) = self.path {
             self.raw_data = Some(read_to_string(path)?);
             Ok(())
         } else {
-            Err(Error::new(
-                ErrorKind::NotFound,
-                anyhow!("This profile does not exists"),
-            ))
+            Err(Error::NoPath)
         }
     }
 
@@ -368,40 +371,33 @@ fn lookup_profile(name: &str, flags: ProfileFlags) -> Option<PathBuf> {
         )
 }
 
-/// Context information of an error
-#[non_exhaustive]
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub struct ErrorContext {
-    pub raw_name: String,
-    pub full_name: String,
-    pub path: String,
-}
-impl StdError for ErrorContext {}
-/// NOTE: This is more a dummy implementation to work with anyhow then an usefull message.
-impl Display for ErrorContext {
-    fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
-        write!(
-            f,
-            "Name '{}' completed to '{}' and found at '{}'.",
-            self.raw_name, self.full_name, self.path,
-        )
-    }
-}
-impl From<Profile<'_>> for ErrorContext {
-    fn from(profile: Profile<'_>) -> Self {
-        Self {
-            raw_name: profile.raw_name.into_owned(),
-            full_name: profile.full_name.into_owned(),
-            path: profile.path.map_or_else(
-                || "Not found".to_string(),
-                |p| {
-                    p.into_os_string()
-                        .into_string()
-                        .unwrap_or_else(|os| os.to_string_lossy().into_owned())
-                },
-            ),
-        }
-    }
+/// Profile Error
+#[derive(Debug, thiserror::Error)]
+pub enum Error {
+    /// Occurs when calling [`new`](Profile::new) with [`ProfileFlags::READ`] and
+    /// the internal call to [`read`](Profile::read) fails.
+    ///
+    /// If you expect that this likely happens, you should call [`read`](Profile::read)
+    /// yourself, because the creation of this variant calls `.to_string()`
+    /// on `raw_name` and `full_name`
+    #[error("Failed to read '{full_name}': {source}")]
+    ReadError {
+        /// [`Profile::raw_name`]
+        raw_name: String,
+        /// [`Profile::full_name`]
+        full_name: String,
+        /// [`Profile::path`] or [`PathBuf::defaul()`](std::path::PathBuf::default)
+        path: PathBuf,
+        /// The error returned by [`read`](Profile::read)
+        source: Box<dyn StdError + Send + Sync>,
+    },
+    /// Occurs when calling [`read`](Profile::read) on a [`Profile`] without a path
+    /// (i.e. [`path`](Profile::path)  is `None`).
+    #[error("Called read on a Profile without a path.")]
+    NoPath,
+    /// Wraps an [I/O Error](std::io::Error).
+    #[error("{0}")]
+    Io(#[from] io::Error),
 }
 
 #[cfg(test)]

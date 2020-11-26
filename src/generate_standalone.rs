@@ -19,7 +19,7 @@
 
 use crate::{
     fatal,
-    profile::{ErrorContext as NewProfileErrorContext, Profile, ProfileFlags},
+    profile::{Error as ProfileError, Profile, ProfileFlags},
 };
 use anyhow::{bail, ensure};
 use clap::ArgMatches;
@@ -46,12 +46,13 @@ pub fn start(cli: &ArgMatches<'_>) {
         ProfileFlags::default_with(ProfileFlags::READ),
     )
     .unwrap_or_else(|err| {
-        if let Some(err_ctx) = err.downcast_ref::<NewProfileErrorContext>() {
-            if let Some(io_err) = err.downcast_ref::<IoError>() {
-                fatal!("Failed to read {}: {}", err_ctx.full_name, io_err);
-            }
+        if let ProfileError::ReadError {
+            full_name, source, ..
+        } = err
+        {
+            fatal!("Failed to read {}: {}", full_name, source)
         }
-        fatal!("{}", err)
+        unreachable!();
     });
 
     let res = process(
@@ -86,16 +87,19 @@ fn process(
                         recusion_level + 1,
                         keep_inc,
                     )?,
-                    Err(err) => match err.downcast::<IoError>() {
-                        Ok(err) => {
-                            if err.kind() == IoErrorKind::NotFound {
+                    Err(err) => {
+                        if let ProfileError::ReadError { ref source, .. } = err {
+                            if let Some(ProfileError::NoPath) =
+                                source.downcast_ref::<ProfileError>()
+                            {
                                 return Ok(());
                             } else {
                                 bail!(err);
                             }
+                        } else {
+                            bail!(err);
                         }
-                        Err(err) => bail!(err),
-                    },
+                    }
                 }
             }
         } else {

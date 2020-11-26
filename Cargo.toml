@@ -23,6 +23,7 @@ libc = "0.2"
 log = "0.4"
 nix = "0.19"
 termcolor = "1.1"
+thiserror = "1.0"
 
 [dependencies.clap]
 version = "2"

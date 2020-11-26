@@ -25,7 +25,6 @@ use anyhow::{bail, ensure};
 use clap::ArgMatches;
 use log::debug;
 use std::fmt::Write;
-use std::io::{Error as IoError, ErrorKind as IoErrorKind};
 
 macro_rules! write_lined {
     ($src:expr, $dst:ident) => {

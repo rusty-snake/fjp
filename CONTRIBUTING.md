@@ -24,6 +24,9 @@ Please include the following informations:
 
 If you contibute code, please use rustfmt to format it.
 
+New documentation comments must use rustdocs [intra-doc] feature.
+[intra-doc]: https://doc.rust-lang.org/rustdoc/linking-to-items-by-name.html
+
 ### Dependency Specification Rules
 
 - Omit patch versions.

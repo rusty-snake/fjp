@@ -79,7 +79,10 @@ fn process(
                 write_lined!(line, standalone_profile);
             } else {
                 ensure!(recusion_level <= 16, "To many include levels");
-                match Profile::new(other_profile, ProfileFlags::default().with(ProfileFlags::READ)) {
+                match Profile::new(
+                    other_profile,
+                    ProfileFlags::default().with(ProfileFlags::READ),
+                ) {
                     Ok(profile) => process(
                         profile.raw_data().unwrap(),
                         standalone_profile,

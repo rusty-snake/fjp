@@ -21,7 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   and renamed if the exists (now they will be copied inside ~/.config/firejail).
 - has: exit with 100 if no profile could we found
 
-## [0.1.0] - 2020-05-04
+## [0.1.0] &ndash; 2020-05-04
 ### Added
 - subcommands: cat, disable, edit, enable, has, rm
 - shell completion

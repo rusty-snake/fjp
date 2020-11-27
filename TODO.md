@@ -3,6 +3,7 @@
  + Integration tests (possible crates: assert-cmd & assert-fs)
  + improve zsh-completion
  + user editable shortcuts
+ + aliases like git or cargo
  + rethink the syntax for profile::Profile::complete_name
  + Rewrite the manpage using roff (https://www.cyberciti.biz/faq/linux-unix-creating-a-manpage/)
 

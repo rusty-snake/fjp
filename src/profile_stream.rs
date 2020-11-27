@@ -477,19 +477,9 @@ impl FromStr for Command {
         } else if line == "caps.drop all" {
             CapsDropAll
         } else if let Some(caps) = line.strip_prefix("caps.drop ") {
-            CapsDrop(
-                caps
-                    .split(',')
-                    .map(str::parse)
-                    .collect::<Result<_, _>>()?,
-            )
+            CapsDrop(caps.split(',').map(str::parse).collect::<Result<_, _>>()?)
         } else if let Some(caps) = line.strip_prefix("caps.keep ") {
-            CapsKeep(
-                caps
-                    .split(',')
-                    .map(str::parse)
-                    .collect::<Result<_, _>>()?,
-            )
+            CapsKeep(caps.split(',').map(str::parse).collect::<Result<_, _>>()?)
         } else if line == "dbus-user filter" {
             DBusUser(DBusPolicy::Filter)
         } else if line == "dbus-user none" {
@@ -538,7 +528,7 @@ impl FromStr for Command {
             Noblacklist(path.to_string())
         } else if line == "nodvd" {
             Nodvd
-        } else if let Some(path) =line.strip_prefix("noexec ") {
+        } else if let Some(path) = line.strip_prefix("noexec ") {
             Noexec(path.to_string())
         } else if line == "nogroups" {
             Nogroups

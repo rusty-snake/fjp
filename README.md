@@ -74,7 +74,7 @@ firejail-profile, but fjp is faster to type.
 
 fjp reads the `EDITOR` environment-varibale and use `/usr/bin/vim` as fallback.
 To use `nano` as editor, just call `EDITOR=nano fjp edit firefox`. In order to make this
-persinstent, add `EDITOR=nano` to you `.bashrc`.
+persistent, add `EDITOR=nano` to your `.bashrc`.
 
 **3. How can I change the log level?**
 

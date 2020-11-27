@@ -116,11 +116,11 @@ fn parse(content: &str) -> [Option<Vec<String>>; 2] {
     let mut profile = Vec::new();
 
     for line in content.lines() {
-        if line.starts_with("include ") {
-            if line.ends_with(".local") {
-                local.push(unsafe { line.get_unchecked(8..) }.to_string());
-            } else if line.ends_with(".profile") {
-                profile.push(unsafe { line.get_unchecked(8..) }.to_string());
+        if let Some(other_profile) = line.strip_prefix("include ") {
+            if other_profile.ends_with(".local") {
+                local.push(other_profile.to_string());
+            } else if other_profile.ends_with(".profile") {
+                profile.push(other_profile.to_string());
             }
         }
     }

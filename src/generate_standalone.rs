@@ -74,12 +74,12 @@ fn process(
     keep_inc: bool,
 ) -> anyhow::Result<()> {
     for line in data.lines() {
-        if line.starts_with("include ") {
+        if let Some(other_profile) = line.strip_prefix("include ") {
             if keep_inc && line.ends_with(".inc") {
                 write_lined!(line, standalone_profile);
             } else {
                 ensure!(recusion_level <= 16, "To many include levels");
-                match Profile::new(&line[8..], ProfileFlags::default().with(ProfileFlags::READ)) {
+                match Profile::new(other_profile, ProfileFlags::default().with(ProfileFlags::READ)) {
                     Ok(profile) => process(
                         profile.raw_data().unwrap(),
                         standalone_profile,

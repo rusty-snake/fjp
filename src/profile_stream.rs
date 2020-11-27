@@ -291,8 +291,8 @@ impl FromStr for Content {
     fn from_str(line: &str) -> Result<Self, Self::Err> {
         if line == "" {
             Ok(Self::Blank)
-        } else if line.starts_with('#') {
-            Ok(Self::Comment(line[1..].to_string()))
+        } else if let Some(comment) = line.strip_prefix('#') {
+            Ok(Self::Comment(comment.to_string()))
         } else if line.starts_with('?') {
             match line.parse() {
                 Ok(cond) => Ok(Self::Conditional(cond)),
@@ -470,22 +470,22 @@ impl FromStr for Command {
             Allusers
         } else if line == "apparmor" {
             Apparmor
-        } else if line.starts_with("blacklist ") {
-            Blacklist(line[10..].to_string())
+        } else if let Some(path) = line.strip_prefix("blacklist ") {
+            Blacklist(path.to_string())
         } else if line == "caps" {
             Caps
         } else if line == "caps.drop all" {
             CapsDropAll
-        } else if line.starts_with("caps.drop ") {
+        } else if let Some(caps) = line.strip_prefix("caps.drop ") {
             CapsDrop(
-                line[10..]
+                caps
                     .split(',')
                     .map(str::parse)
                     .collect::<Result<_, _>>()?,
             )
-        } else if line.starts_with("caps.keep ") {
+        } else if let Some(caps) = line.strip_prefix("caps.keep ") {
             CapsKeep(
-                line[10..]
+                caps
                     .split(',')
                     .map(str::parse)
                     .collect::<Result<_, _>>()?,
@@ -494,52 +494,52 @@ impl FromStr for Command {
             DBusUser(DBusPolicy::Filter)
         } else if line == "dbus-user none" {
             DBusUser(DBusPolicy::None)
-        } else if line.starts_with("dbus-user.own ") {
-            DBusUserOwn(line[14..].to_string())
-        } else if line.starts_with("dbus-user.talk ") {
-            DBusUserTalk(line[15..].to_string())
+        } else if let Some(name) = line.strip_prefix("dbus-user.own ") {
+            DBusUserOwn(name.to_string())
+        } else if let Some(name) = line.strip_prefix("dbus-user.talk ") {
+            DBusUserTalk(name.to_string())
         } else if line == "dbus-system filter" {
             DBusSystem(DBusPolicy::Filter)
         } else if line == "dbus-system none" {
             DBusSystem(DBusPolicy::None)
-        } else if line.starts_with("dbus-system.own ") {
-            DBusSystemOwn(line[16..].to_string())
-        } else if line.starts_with("dbus-system.talk ") {
-            DBusSystemTalk(line[17..].to_string())
+        } else if let Some(name) = line.strip_prefix("dbus-system.own ") {
+            DBusSystemOwn(name.to_string())
+        } else if let Some(name) = line.strip_prefix("dbus-system.talk ") {
+            DBusSystemTalk(name.to_string())
         } else if line == "disable-mnt" {
             DisableMnt
-        } else if line.starts_with("hostname ") {
-            Hostname(line[9..].to_string())
-        } else if line.starts_with("ignore ") {
-            Ignore(line[7..].to_string())
-        } else if line.starts_with("include ") {
-            Include(line[8..].to_string())
+        } else if let Some(hostname) = line.strip_prefix("hostname ") {
+            Hostname(hostname.to_string())
+        } else if let Some(line) = line.strip_prefix("ignore ") {
+            Ignore(line.to_string())
+        } else if let Some(other_profile) = line.strip_prefix("include ") {
+            Include(other_profile.to_string())
         } else if line == "ipc-namespace" {
             IpcNamespace
-        } else if line.starts_with("join-or-start ") {
-            JoinOrStart(line[14..].to_string())
+        } else if let Some(name) = line.strip_prefix("join-or-start ") {
+            JoinOrStart(name.to_string())
         } else if line == "machine-id" {
             MachineId
         } else if line == "memory-deny-write-execute" {
             MemoryDenyWriteExecute
-        } else if line.starts_with("mkdir ") {
-            Mkdir(line[6..].to_string())
-        } else if line.starts_with("mkfile ") {
-            Mkfile(line[7..].to_string())
-        } else if line.starts_with("name ") {
-            Name(line[5..].to_string())
+        } else if let Some(path) = line.strip_prefix("mkdir ") {
+            Mkdir(path.to_string())
+        } else if let Some(path) = line.strip_prefix("mkfile ") {
+            Mkfile(path.to_string())
+        } else if let Some(sandboxname) = line.strip_prefix("name ") {
+            Name(sandboxname.to_string())
         } else if line == "netfilter" {
             Netfilter
         } else if line == "net none" {
             NetNone
         } else if line == "no3d" {
             No3d
-        } else if line.starts_with("noblacklist ") {
-            Noblacklist(line[12..].to_string())
+        } else if let Some(path) = line.strip_prefix("noblacklist ") {
+            Noblacklist(path.to_string())
         } else if line == "nodvd" {
             Nodvd
-        } else if line.starts_with("noexec ") {
-            Noexec(line[7..].to_string())
+        } else if let Some(path) =line.strip_prefix("noexec ") {
+            Noexec(path.to_string())
         } else if line == "nogroups" {
             Nogroups
         } else if line == "nonewprivs" {
@@ -554,59 +554,59 @@ impl FromStr for Command {
             Nou2f
         } else if line == "novideo" {
             Novideo
-        } else if line.starts_with("nowhitelist ") {
-            Nowhitelist(line[12..].to_string())
+        } else if let Some(path) = line.strip_prefix("nowhitelist ") {
+            Nowhitelist(path.to_string())
         } else if line == "private" {
             Private(None)
-        } else if line.starts_with("private ") {
-            Private(Some(line[8..].to_string()))
-        } else if line.starts_with("private-bin ") {
-            PrivateBin(line[12..].split(',').map(String::from).collect())
+        } else if let Some(path) = line.strip_prefix("private ") {
+            Private(Some(path.to_string()))
+        } else if let Some(bins) = line.strip_prefix("private-bin ") {
+            PrivateBin(bins.split(',').map(String::from).collect())
         } else if line == "private-cache" {
             PrivateCache
-        } else if line.starts_with("private-cwd ") {
-            PrivateCwd(line[12..].to_string())
+        } else if let Some(path) = line.strip_prefix("private-cwd ") {
+            PrivateCwd(path.to_string())
         } else if line == "private-dev" {
             PrivateDev
-        } else if line.starts_with("private-etc ") {
-            PrivateEtc(line[12..].split(',').map(String::from).collect())
+        } else if let Some(files) = line.strip_prefix("private-etc ") {
+            PrivateEtc(files.split(',').map(String::from).collect())
         } else if line == "private-lib" {
             PrivateLib(None)
-        } else if line.starts_with("private-lib ") {
-            PrivateLib(Some(line[12..].split(',').map(String::from).collect()))
-        } else if line.starts_with("private-opt ") {
-            PrivateOpt(line[12..].split(',').map(String::from).collect())
-        } else if line.starts_with("private-srv ") {
-            PrivateSrv(line[12..].split(',').map(String::from).collect())
+        } else if let Some(libs) = line.strip_prefix("private-lib ") {
+            PrivateLib(Some(libs.split(',').map(String::from).collect()))
+        } else if let Some(paths) = line.strip_prefix("private-opt ") {
+            PrivateOpt(paths.split(',').map(String::from).collect())
+        } else if let Some(paths) = line.strip_prefix("private-srv ") {
+            PrivateSrv(paths.split(',').map(String::from).collect())
         } else if line == "private-tmp" {
             PrivateTmp
-        } else if line.starts_with("protocol ") {
+        } else if let Some(protocols) = line.strip_prefix("protocol ") {
             Protocol(
-                line[9..]
+                protocols
                     .split(',')
                     .map(FromStr::from_str)
                     .collect::<Result<_, _>>()?,
             )
         } else if line == "quiet" {
             Quiet
-        } else if line.starts_with("read-only ") {
-            ReadOnly(line[12..].to_string())
-        } else if line.starts_with("read-write ") {
-            ReadWrite(line[13..].to_string())
+        } else if let Some(path) = line.strip_prefix("read-only ") {
+            ReadOnly(path.to_string())
+        } else if let Some(path) = line.strip_prefix("read-write ") {
+            ReadWrite(path.to_string())
         } else if line == "seccomp" {
             Seccomp(None)
-        } else if line.starts_with("seccomp ") {
-            Seccomp(Some(line[8..].split(',').map(String::from).collect()))
+        } else if let Some(syscalls) = line.strip_prefix("seccomp ") {
+            Seccomp(Some(syscalls.split(',').map(String::from).collect()))
         } else if line == "seccomp.block-secondary" {
             SeccompBlockSecondary
-        } else if line.starts_with("seccomp.drop ") {
-            SeccompDrop(line[13..].split(',').map(String::from).collect())
+        } else if let Some(syscalls) = line.strip_prefix("seccomp.drop ") {
+            SeccompDrop(syscalls.split(',').map(String::from).collect())
         } else if line == "shell none" {
             ShellNone
         } else if line == "tracelog" {
             Tracelog
-        } else if line.starts_with("whitelist ") {
-            Whitelist(line[10..].to_string())
+        } else if let Some(path) = line.strip_prefix("whitelist ") {
+            Whitelist(path.to_string())
         } else if line == "writable-run-user" {
             WritableRunUser
         } else if line == "writable-var" {

@@ -1,0 +1,7 @@
+title: FJP &mdash; FireJail-Profile
+description: >-
+  A handy command line program to work fast and straightforward with firejail profiles.
+
+theme: jekyll-theme-modernist
+plugins:
+  - jekyll-feed

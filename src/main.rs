@@ -22,8 +22,8 @@
 use clap::{crate_description, load_yaml, App};
 use env_logger::{Builder, Env};
 use lazy_static::lazy_static;
-use libc::getuid;
 use log::warn;
+use nix::unistd::getuid;
 
 mod location;
 mod profile;
@@ -74,7 +74,7 @@ fn main() {
         .format_timestamp(None)
         .init();
 
-    if unsafe { getuid() } == 0 {
+    if getuid().is_root() {
         warn!("fjp is designed to be used as regular user.");
     }
 

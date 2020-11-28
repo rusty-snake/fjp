@@ -5,6 +5,7 @@ description = "A commandline program to deal with firejail profiles."
 authors = ["rusty-snake"]
 edition = "2018"
 readme = "README.md"
+homepage = "https://rusty-snake.github.io/fjp"
 repository = "https://github.com/rusty-snake/fjp"
 license = "GPL-3.0-or-later"
 build = "build.rs"

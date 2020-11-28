@@ -12,16 +12,16 @@ A commandline program to deal with firejail profiles.
 Get started
 -----------
 
-1. Install rust: <https://www.rust-lang.org/tools/install>
+1. Install build dependencies
+([rust](https://www.rust-lang.org/tools/install) and
+[meson](https://mesonbuild.com/Getting-meson.html))
 
-```
-$ curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs > rustup-init.sh
-$ bash rustup-init.sh --no-modify-path --profile minimal
-
-# If you use Arch or Fedora, you can also install rust via you package-manager.
-$ sudo pacman -S rust # Arch Linux
-$ sudo dnf install cargo # Fedora
-```
+| Distro | Command(s) |
+| ------ | ---------- |
+| Arch Linux | `sudo pacman -S rust meson` |
+| Debian | `sudo apt install cargo meson` (NOTE: debian stable has likely to old packages) |
+| Fedora | `sudo dnf install cargo meson` |
+| Other | `curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs > rustup-init.sh`<br>`bash rustup-init.sh --no-modify-path --profile minimal`<br>`pip3 install --user meson` |
 
 2. Clone this repo
 
@@ -33,7 +33,9 @@ $ cd fjp
 3. Build and Install
 
 ```
-$ ./make.sh --prefix=/usr
+$ meson setup --buildtype=release _builddir
+$ meson compile -C _builddir
+$ sudo meson install --no-rebuild -C _builddir
 ```
 
 4. Start using it
@@ -62,6 +64,8 @@ Rename `~/.config/firejail` to `~/.config/firejail.disabled` in order to make fi
 Show firefox and all its includes. Actual firefox.local, globals.local, firefox.profile, firefox-common.local, firefox-common.profile
 
     $ fjp cat firefox
+
+See <https://rusty-snake.github.io/fjp/#examples> for more.
 
 FAQ
 ---

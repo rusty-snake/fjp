@@ -64,8 +64,6 @@ lazy_static! {
     };
 }
 
-macros::fjp_version!();
-
 fn main() {
     #[cfg(feature = "full")]
     color_backtrace::install();
@@ -81,7 +79,7 @@ fn main() {
     let yaml = load_yaml!("cli.yaml");
     let matches = App::from_yaml(yaml)
         .about(crate_description!())
-        .version(FJP_VERSION)
+        .version(macros::fjp_version!())
         .get_matches();
     match matches.subcommand() {
         ("cat", Some(sub_matches)) => start_cat(sub_matches),

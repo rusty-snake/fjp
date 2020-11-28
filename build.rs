@@ -19,7 +19,7 @@
 
 use clap::{crate_description, crate_version, load_yaml, App, Shell};
 use std::env::var_os;
-use std::fs::File;
+use std::fs::{create_dir_all, File};
 use std::io::BufWriter;
 use std::io::Write;
 use std::path::Path;
@@ -57,13 +57,15 @@ _all_profiles() {
 "#;
 
 fn main() {
-    let out_dir = match var_os("OUT_DIR") {
+    let out_dir = match var_os("FJP_SHELLCOMP_DIR").or_else(|| var_os("OUT_DIR")) {
         Some(out_dir) => out_dir,
         None => {
             println!("cargo:warning=Failed to generate shell completions. err:out_dir");
             return;
         }
     };
+
+    create_dir_all(&out_dir).unwrap();
 
     let yaml = load_yaml!("src/cli.yaml");
     let mut app = App::from_yaml(yaml)
@@ -82,7 +84,7 @@ fn main() {
             return;
         }
     };
-    let mut zcomp = BufWriter::new(File::create(Path::new(&out_dir).join("_fjp")).unwrap());
+    let mut zcomp = BufWriter::new(File::create(Path::new(&out_dir).join("fjp.zsh")).unwrap());
     write!(zcomp, "{}", &ZCOMP_HEADER[1..ZCOMP_HEADER.len()]).unwrap();
     let mut sub_c_arm = None;
     for line in rzcomp.lines().skip(3) {

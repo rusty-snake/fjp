@@ -22,6 +22,10 @@ on:
       - Cargo.toml
       - build.rs
 
+
+env:
+    CARGO_TERM_COLOR: always
+
 jobs:
   check:
     name: Rust ${{ matrix.rust }}

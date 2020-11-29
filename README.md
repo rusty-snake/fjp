@@ -1,7 +1,6 @@
 firejail-profile
 ================
 
-![](https://github.com/rusty-snake/fjp/workflows/ShellCheck/badge.svg)
 ![](https://github.com/rusty-snake/fjp/workflows/Rust/badge.svg)
 ![](https://img.shields.io/badge/rustc-1.45+-blue.svg?logo=rust)
 ![](https://img.shields.io/github/license/rusty-snake/fjp.svg?color=darkred&logo=gnu)

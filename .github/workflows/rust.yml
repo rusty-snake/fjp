@@ -26,14 +26,14 @@ jobs:
   check:
     name: Rust ${{ matrix.rust }}
     if: ${{ ! contains(github.event.commits[0].message, '[skip ci]') }}
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-20.04
     strategy:
       matrix:
         rust: [1.45.0, stable, beta]
     steps:
     - uses: actions/checkout@v2
     - name: Install minimal ${{ matrix.rust }} rust
-      uses: actions-rs/toolchain@b2417cd
+      uses: actions-rs/toolchain@16499b5e05bf2e26879000db0c1d13f7e13fa3af
       with:
         override: true
         profile: minimal

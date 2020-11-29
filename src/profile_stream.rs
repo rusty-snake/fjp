@@ -22,7 +22,6 @@
 #![allow(clippy::cognitive_complexity)]
 
 use crate::utils::join;
-use anyhow::{anyhow, Error};
 use std::borrow::{Borrow, BorrowMut};
 use std::fmt;
 use std::iter::FromIterator;
@@ -253,26 +252,13 @@ impl AsRef<Content> for Line {
 //
 
 /// The content of a profile-`Line`
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum Content {
     Blank,
     Command(Command),
     Comment(String),
     Conditional(Conditional),
-    Invalid(String, Arc<Error>),
-}
-impl PartialEq<Self> for Content {
-    fn eq(&self, other: &Self) -> bool {
-        use Content::*;
-        match (self, other) {
-            (Blank, Blank) => true,
-            (Command(comm1), Command(comm2)) if comm1 == comm2 => true,
-            (Comment(cmnt1), Comment(cmnt2)) if cmnt1 == cmnt2 => true,
-            (Conditional(cond1), Conditional(cond2)) if cond1 == cond2 => true,
-            (Invalid(line1, _), Invalid(line2, _)) if line1 == line2 => true,
-            _ => false,
-        }
-    }
+    Invalid(String, Error),
 }
 impl fmt::Display for Content {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -296,12 +282,12 @@ impl FromStr for Content {
         } else if line.starts_with('?') {
             match line.parse() {
                 Ok(cond) => Ok(Self::Conditional(cond)),
-                Err(err) => Err(Self::Invalid(line.to_string(), Arc::new(err))),
+                Err(err) => Err(Self::Invalid(line.to_string(), err)),
             }
         } else {
             match line.parse() {
                 Ok(comm) => Ok(Self::Command(comm)),
-                Err(err) => Err(Self::Invalid(line.to_string(), Arc::new(err))),
+                Err(err) => Err(Self::Invalid(line.to_string(), err)),
             }
         }
     }
@@ -606,7 +592,7 @@ impl FromStr for Command {
         } else if line == "x11 none" {
             X11None
         } else {
-            return Err(anyhow!("unknow or invalid line"));
+            return Err(Error::BadCommand);
         })
     }
 }
@@ -635,7 +621,7 @@ impl FromStr for Conditional {
         let con = splited_line.next().unwrap();
         let cmd = splited_line
             .next()
-            .ok_or_else(|| anyhow!("Condition has no value"))?;
+            .ok_or_else(|| Error::EmptyCondition)?;
 
         if con == "?BROWSER_ALLOW_DRM:" {
             Ok(Self::BrowserAllowDrm(cmd.parse()?))
@@ -652,7 +638,7 @@ impl FromStr for Conditional {
         } else if con == "?HAS_X11:" {
             Ok(Self::HasX11(cmd.parse()?))
         } else {
-            Err(anyhow!("unknow condition"))
+            Err(Error::BadCondition)
         }
     }
 }
@@ -695,7 +681,7 @@ impl FromStr for Protocol {
             "netlink" => Ok(Self::Netlink),
             "packet" => Ok(Self::Packet),
             "bluetooth" => Ok(Self::Bluetooth),
-            _ => Err(anyhow!("This is not a valid protocol")),
+            _ => Err(Error::BadProtocol),
         }
     }
 }
@@ -852,7 +838,7 @@ impl FromStr for Capabilities {
             "sys_tty_config" => Ok(SysTtyConfig),
             "syslog" => Ok(Syslog),
             "wake_alarm" => Ok(WakeAlarm),
-            _ => Err(anyhow!("Unknow cap: {}", s)),
+            _ => Err(Error::BadCap),
         }
     }
 }
@@ -874,4 +860,22 @@ impl fmt::Display for DBusPolicy {
             Self::None => write!(f, "none"),
         }
     }
+}
+
+//
+// Error
+//
+
+#[derive(Clone, Debug, thiserror::Error, PartialEq)]
+pub enum Error {
+    #[error("Invalid capability")]
+    BadCap,
+    #[error("Invalid command")]
+    BadCommand,
+    #[error("Invalid condition")]
+    BadCondition,
+    #[error("Invalid protocol")]
+    BadProtocol,
+    #[error("No command after condition")]
+    EmptyCondition,
 }

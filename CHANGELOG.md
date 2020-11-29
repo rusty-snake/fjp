@@ -8,11 +8,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - CI using GitHub Actions
 - MSRV: 1.45
-- new subcommands: list, diff, generate-standalone
+- new subcommands: list, generate-standalone
+- new experimental subcommands: diff
 - make.sh: more controll about the installation paths
 - make.sh: support striping binaries
 - make.sh: can build rpms
+- Switch from self written make.sh to meson as buildsystem
 - add short options
+- shortname for include profiles on supported subcommands
 
 ### Changed
 - cat: no-globals in now default

@@ -48,22 +48,17 @@ fix some auto-fixable lints
 trash
 -----
 
-A trash for user-wide profiles (~/.config/firejail/trash).
-
- - `--empty`
- - `--list`
- - `--undo=PROFILE`
- - `--delete=PROFILE`
+<https://github.com/rusty-snake/fjp/issues/18>
 
 mv
 --
 
-rename profiles
+<https://github.com/rusty-snake/fjp/issues/19>
 
 cp
 --
 
-copy profiles
+<https://github.com/rusty-snake/fjp/issues/20>
 
 generate-standalone
 -------------------

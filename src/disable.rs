@@ -18,6 +18,7 @@
  */
 
 use crate::{
+    fatal,
     location::Location,
     profile::{Profile, ProfileFlags},
     utils::input,
@@ -33,9 +34,6 @@ lazy_static! {
     pub static ref DISABLED_DIR: Location = {
         let mut path = USER_PROFILE_DIR.to_owned_inner();
         path.push("disabled");
-        if !path.exists() {
-            create_dir(&path).expect("Failed to create the disabled dir.");
-        }
         Location::from(path)
     };
 }
@@ -48,6 +46,10 @@ pub fn start(cli: &ArgMatches<'_>) {
     } else if cli.is_present("list") {
         list().unwrap_or_else(|e| error!("An error occured while listing: {}", e));
     } else {
+        if !DISABLED_DIR.as_ref().exists() {
+            create_dir(DISABLED_DIR.as_ref())
+                .unwrap_or_else(|e| fatal!("Failed to create the disabled dir: {}", e));
+        }
         let profile_name = cli.value_of("PROFILE_NAME").unwrap();
         disable_profile(
             &Profile::new(

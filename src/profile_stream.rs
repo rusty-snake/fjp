@@ -619,9 +619,7 @@ impl FromStr for Conditional {
     fn from_str(line: &str) -> Result<Self, Self::Err> {
         let mut splited_line = line.splitn(2, ' ');
         let con = splited_line.next().unwrap();
-        let cmd = splited_line
-            .next()
-            .ok_or_else(|| Error::EmptyCondition)?;
+        let cmd = splited_line.next().ok_or_else(|| Error::EmptyCondition)?;
 
         if con == "?BROWSER_ALLOW_DRM:" {
             Ok(Self::BrowserAllowDrm(cmd.parse()?))

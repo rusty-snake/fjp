@@ -21,6 +21,9 @@ use crate::profile::{Profile, ProfileFlags};
 use crate::{fatal, utils::ColoredText};
 use clap::ArgMatches;
 use log::{debug, error, warn};
+use nix::sys::signal::{kill, Signal::SIGTERM};
+use nix::unistd::Pid;
+use std::convert::TryInto;
 use std::io;
 use std::process::{Child, Command, Stdio};
 use termcolor::Color;
@@ -43,6 +46,7 @@ pub fn start(cli: &ArgMatches<'_>) {
     let mut child: Option<Child> = Command::new(cmd[0])
         .args(&cmd[1..])
         .stdin(Stdio::piped())
+        .stderr(Stdio::null())
         .spawn()
         .map_or_else(
             |err| {
@@ -52,11 +56,6 @@ pub fn start(cli: &ArgMatches<'_>) {
             },
             Some,
         );
-    let mut output: Box<dyn io::Write> = if let Some(ref mut child) = child {
-        Box::new(child.stdin.as_mut().unwrap())
-    } else {
-        Box::new(io::stdout())
-    };
 
     let opts = Options {
         show_locals: !cli.is_present("no-locals"),
@@ -67,16 +66,23 @@ pub fn start(cli: &ArgMatches<'_>) {
 
     match Profile::new(name, profile_flags) {
         Ok(p) => {
+            let mut output: Box<dyn io::Write> = if let Some(ref mut child) = child {
+                Box::new(child.stdin.as_mut().unwrap())
+            } else {
+                Box::new(io::stdout())
+            };
             if let Some(content) = &p.raw_data() {
                 process(&p, &content, &opts, &mut output, 0);
             }
         }
         Err(e) => {
+            if let Some(ref child) = child {
+                kill(Pid::from_raw(child.id().try_into().unwrap()), SIGTERM).unwrap();
+            }
             error!("Couldn't Read Profile. {}", e);
         }
     };
 
-    drop(output); // We need to drop output here, otherwise we would have two mutable references.
     if let Some(ref mut child) = child {
         child.wait().unwrap();
     }

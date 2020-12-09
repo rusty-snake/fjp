@@ -49,6 +49,7 @@ meson.add_install_script(
   install_script,
   meson.current_build_dir(),
   app_bin,
+  get_option('strip').to_string(),
   get_option('bindir'),
   get_option('datadir'),
 )

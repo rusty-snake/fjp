@@ -3,7 +3,10 @@ project('fjp',
           version: '0.2.0-dev',
           license: 'GPL-3.0-or-later',
     meson_version: '>= 0.49.0',
-  default_options: ['warning_level=3']
+  default_options: [
+    'warning_level=3',
+    'strip=true',
+  ]
 )
 
 subdir('src')

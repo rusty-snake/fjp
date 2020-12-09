@@ -23,4 +23,3 @@ else
     cargo build --manifest-path "$MESON_SOURCE_ROOT"/Cargo.toml --verbose
     cp "$CARGO_TARGET_DIR"/debug/"$APP_BIN" "$MESON_CURRENT_BUILD_DIR"
 fi
-

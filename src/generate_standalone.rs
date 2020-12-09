@@ -21,24 +21,65 @@ use crate::{
     fatal,
     profile::{Error as ProfileError, Profile, ProfileFlags},
 };
-use anyhow::{bail, ensure};
+use anyhow::{anyhow, ensure};
+use bitflags::bitflags;
 use clap::ArgMatches;
 use log::debug;
-use std::fmt::Write;
+use std::error::Error as StdError;
+use std::fs::File;
+use std::io::{stdout, BufWriter, Write as IoWrite};
+
+bitflags! {
+    struct Flags: u8 {
+        const KEEP_INC      = 0b_0000_0001;
+        const KEEP_LOCALS   = 0b_0000_0010;
+    }
+}
+
+#[derive(Debug, Default, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
+struct RecusionLevel(u8);
+impl RecusionLevel {
+    pub const fn zero() -> Self {
+        Self(0)
+    }
+
+    pub const fn max() -> Self {
+        Self(16)
+    }
+
+    pub const fn incremented(current: Self) -> Self {
+        Self(current.0 + 1)
+    }
+}
 
 macro_rules! write_lined {
     ($src:expr, $dst:ident) => {
-        $dst.write_str($src).unwrap();
-        $dst.write_char('\n').unwrap();
+        $dst.write_all($src.as_bytes()).unwrap();
+        $dst.write_all(b"\n").unwrap();
     };
 }
 
 pub fn start(cli: &ArgMatches<'_>) {
     debug!("subcommand: generate-standalone");
 
-    let keep_inc = cli.is_present("keep-inc");
+    let mut flags = Flags::empty();
+    if cli.is_present("keep-inc") {
+        flags.insert(Flags::KEEP_INC);
+    }
+    if cli.is_present("keep-locals") {
+        flags.insert(Flags::KEEP_LOCALS);
+    }
 
-    let mut standalone_profile = String::new();
+    let mut output: BufWriter<Box<dyn IoWrite>> =
+        BufWriter::new(cli.value_of("output").map_or_else(
+            || Box::new(stdout()) as Box<dyn IoWrite>,
+            |file_name| {
+                Box::new(
+                    File::create(file_name)
+                        .unwrap_or_else(|err| fatal!("Failed to create output file: {}", err)),
+                )
+            },
+        ));
 
     let profile = Profile::new(
         cli.value_of("PROFILE_NAME").unwrap(),
@@ -54,59 +95,59 @@ pub fn start(cli: &ArgMatches<'_>) {
         unreachable!();
     });
 
-    let res = process(
-        profile.raw_data().unwrap(),
-        &mut standalone_profile,
-        0,
-        keep_inc,
-    );
-    if let Err(err) = res {
-        fatal!("{}", err);
-    }
+    process(&profile, &mut output, RecusionLevel::zero(), flags)
+        .unwrap_or_else(|err| fatal!("{}", err));
 
-    println!("{}", standalone_profile);
+    output.flush().unwrap();
 }
 
 fn process(
-    data: &str,
-    standalone_profile: &mut String,
-    recusion_level: u8,
-    keep_inc: bool,
+    profile: &Profile,
+    output: &mut dyn IoWrite,
+    recusion_level: RecusionLevel,
+    flags: Flags,
 ) -> anyhow::Result<()> {
-    for line in data.lines() {
+    writeln!(output, "## Begin {} ##", profile.full_name()).unwrap();
+    for line in profile.raw_data().unwrap().lines() {
         if let Some(other_profile) = line.strip_prefix("include ") {
-            if keep_inc && line.ends_with(".inc") {
-                write_lined!(line, standalone_profile);
+            if (flags.contains(Flags::KEEP_INC) && line.ends_with(".inc"))
+                || (flags.contains(Flags::KEEP_LOCALS) && line.ends_with(".local"))
+            {
+                write_lined!(line, output);
             } else {
-                ensure!(recusion_level <= 16, "To many include levels");
+                ensure!(
+                    recusion_level <= RecusionLevel::max(),
+                    "To many include levels"
+                );
+
                 match Profile::new(
                     other_profile,
                     ProfileFlags::default().with(ProfileFlags::READ),
                 ) {
                     Ok(profile) => process(
-                        profile.raw_data().unwrap(),
-                        standalone_profile,
-                        recusion_level + 1,
-                        keep_inc,
-                    )?,
-                    Err(err) => {
-                        if let ProfileError::ReadError { ref source, .. } = err {
-                            if let Some(ProfileError::NoPath) =
-                                source.downcast_ref::<ProfileError>()
-                            {
-                                return Ok(());
-                            } else {
-                                bail!(err);
-                            }
-                        } else {
-                            bail!(err);
-                        }
-                    }
-                }
+                        &profile,
+                        output,
+                        RecusionLevel::incremented(recusion_level),
+                        flags,
+                    ),
+                    Err(err) if caused_by_no_path(&err) => Ok(()),
+                    Err(err) => Err(anyhow!("Failed to read '{}': {}", other_profile, err)),
+                }?;
             }
         } else {
-            write_lined!(line, standalone_profile);
+            write_lined!(line, output);
         }
     }
+    writeln!(output, "## End {} ##", profile.full_name()).unwrap();
     Ok(())
+}
+
+fn caused_by_no_path(err: &(dyn StdError + 'static)) -> bool {
+    if let Some(ProfileError::NoPath) = err.downcast_ref() {
+        true
+    } else if let Some(e) = err.source() {
+        caused_by_no_path(e)
+    } else {
+        false
+    }
 }

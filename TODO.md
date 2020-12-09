@@ -63,20 +63,6 @@ cp
 generate-standalone
 -------------------
 
- - `-o OUTPUT_FILE`
- - `--keep-locals`
- - Add notes e.g.
-```
-#
-# Beginn firefox.local
-#
-blacklist ${HOME}/Downloads/NotForFirefox
-#
-# End firefox.local
-#
-…
-```
-
 build
 -----
 

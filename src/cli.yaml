@@ -121,6 +121,15 @@ subcommands:
         - keep-inc:
             long: keep-inc
             help: Keep all includes of .inc's
+        - keep-locals:
+            long: keep-locals
+            help: Keep all includes of .local's
+        - output:
+            short: o
+            long: output
+            takes_value: true
+            value_name: OUTPUT-FILE
+            help: The name of the file to write results
         - PROFILE_NAME:
             index: 1
             required: true

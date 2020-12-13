@@ -243,7 +243,7 @@ impl<'a> Profile<'a> {
 
     /// Read the data of the profile
     ///
-    /// This will re-read it if it is already readed.
+    /// This will re-read it if it is already read.
     ///
     /// # Errors
     ///
@@ -270,21 +270,21 @@ impl<'a> Profile<'a> {
         }
     }
 
-    /// Return true if the profile is readed (i.e. the data filed is not None), otherwise false.
+    /// Return true if the profile is read (i.e. the data filed is not None), otherwise false.
     ///
     /// # Examples
     ///
     /// ```
     /// let profile = Profile::new("firefox", ProfileFlags::READ)?;
-    /// assert_eq!(profile.readed(), true);
+    /// assert_eq!(profile.is_read(), true);
     ///
     /// let mut profile = Profile::new("firefox", ProfileFlags::default())?;
-    /// assert_eq!(profile.readed(), false);
+    /// assert_eq!(profile.is_read(), false);
     /// profile.read()?;
-    /// assert_eq!(profile.readed(), true);
+    /// assert_eq!(profile.is_read(), true);
     /// # Ok::<(), Box<dyn std::error::Error>>(())
     /// ```
-    pub fn readed(&self) -> bool {
+    pub fn is_read(&self) -> bool {
         self.raw_data.is_some()
     }
 }

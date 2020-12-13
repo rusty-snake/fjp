@@ -176,7 +176,7 @@ impl<'a> Profile<'a> {
     /// [`ErrorContext`]: struct.ErrorContext.html
     pub fn new(name: &'a str, flags: ProfileFlags) -> Result<Self, Error> {
         let raw_name = Cow::Borrowed(name);
-        let full_name = complete_name(name);
+        let full_name = complete_name(name, flags);
 
         debug!("Expanded profile-name '{}' to '{}'.", raw_name, full_name);
 
@@ -291,20 +291,21 @@ impl<'a> Profile<'a> {
 
 /// Complete a profile name
 ///
-/// This expands shortnames and adds `.profile` if necessary.
+/// - extract the basename if `name` is a path
+/// - expand shortnames if possible
+/// - add `.profile` if necessary
 ///
 /// # Panics
 ///
-/// This functions panics if `name` contains a `/` or is equal to `.`/`..`.
-pub fn complete_name(name: &str) -> Cow<'_, str> {
+/// This functions panics if `name` contains a `/` and flags does not contain `DENY_BY_PATH`.
+pub fn complete_name(name: &str, flags: ProfileFlags) -> Cow<'_, str> {
     if name.contains('/') {
-        panic!("Profile names must not contain '/'.");
-    }
-    if name == "." || name == ".." {
-        panic!("Profile names must not be '.' or '..'");
-    }
-
-    if let Some(long_name) = SHORTNAMES.get(name) {
+        if flags.contains(ProfileFlags::DENY_BY_PATH) {
+            panic!("Profile names must not contain '/'.");
+        } else {
+            Cow::Borrowed(name.rsplit('/').next().unwrap())
+        }
+    } else if let Some(long_name) = SHORTNAMES.get(name) {
         Cow::Borrowed(long_name)
     } else if name.ends_with(".inc") || name.ends_with(".local") || name.ends_with(".profile") {
         Cow::Borrowed(name)

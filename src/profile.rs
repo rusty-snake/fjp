@@ -411,4 +411,95 @@ mod tests {
             ProfileFlags::default() & !ProfileFlags::LOOKUP_CWD,
         );
     }
+
+    #[test]
+    fn complete_name_path() {
+        assert_eq!(
+            complete_name("/etc/firejail/gnome-clocks.profile", ProfileFlags::empty()),
+            "gnome-clocks.profile"
+        );
+        assert_eq!(
+            complete_name("/etc/firejail/gnome-clocks", ProfileFlags::empty()),
+            "gnome-clocks"
+        );
+        assert_eq!(
+            complete_name("etc/firejail/gnome-clocks", ProfileFlags::empty()),
+            "gnome-clocks"
+        );
+        assert_eq!(
+            complete_name("~/etc/firejail/gnome-clocks.profile", ProfileFlags::empty()),
+            "gnome-clocks.profile"
+        );
+        assert_eq!(
+            complete_name("./gnome-clocks.local", ProfileFlags::empty()),
+            "gnome-clocks.local"
+        );
+    }
+
+    #[test]
+    #[should_panic]
+    fn complete_name_path_deny_by_path_1() {
+        complete_name(
+            "/etc/firejail/gnome-clocks.profile",
+            ProfileFlags::DENY_BY_PATH,
+        );
+    }
+
+    #[test]
+    #[should_panic]
+    fn complete_name_path_deny_by_path_2() {
+        complete_name("/etc/firejail/gnome-clocks", ProfileFlags::DENY_BY_PATH);
+    }
+
+    #[test]
+    #[should_panic]
+    fn complete_name_path_deny_by_path_3() {
+        complete_name("etc/firejail/gnome-clocks", ProfileFlags::DENY_BY_PATH);
+    }
+
+    #[test]
+    #[should_panic]
+    fn complete_name_path_deny_by_path_4() {
+        complete_name(
+            "~/etc/firejail/gnome-clocks.profile",
+            ProfileFlags::DENY_BY_PATH,
+        );
+    }
+
+    #[test]
+    #[should_panic]
+    fn complete_name_path_deny_by_path_5() {
+        complete_name("./gnome-clocks.local", ProfileFlags::DENY_BY_PATH);
+    }
+
+    #[test]
+    fn complete_name_short_names() {
+        for (sname, lname) in &*SHORTNAMES {
+            assert_eq!(complete_name(sname, ProfileFlags::empty()), *lname,);
+        }
+    }
+
+    #[test]
+    fn complete_name_inc_local_profile() {
+        assert_eq!(
+            complete_name("libreoffice.inc", ProfileFlags::empty()),
+            "libreoffice.inc"
+        );
+        assert_eq!(
+            complete_name("libreoffice.local", ProfileFlags::empty()),
+            "libreoffice.local"
+        );
+        assert_eq!(
+            complete_name("libreoffice.profile", ProfileFlags::empty()),
+            "libreoffice.profile"
+        );
+    }
+
+    #[test]
+    fn complete_name_append_profile() {
+        assert_eq!(
+            complete_name("bijiben", ProfileFlags::empty()),
+            "bijiben.profile"
+        );
+    }
 }

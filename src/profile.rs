@@ -19,7 +19,6 @@
 
 //! Module for dealing with profiles
 
-#![allow(clippy::unreadable_literal)] // bitflags are easier to read without underscores!!
 #![allow(dead_code)] // Some methods are for future use, others are USED! (=false positive)
 
 use crate::location::Location;
@@ -67,17 +66,17 @@ bitflags! {
     /// Flags for creating a new instance of profile
     pub struct ProfileFlags: u8 {
         /// Search in the current working directory (default)
-        const LOOKUP_CWD        = 0b00000001;
+        const LOOKUP_CWD        = 0b_0000_0001;
         /// Search under `~/.config/firejail` (default)
-        const LOOKUP_USER       = 0b00000010;
+        const LOOKUP_USER       = 0b_0000_0010;
         /// Search under `/etc/firejail` (default)
-        const LOOKUP_SYSTEM     = 0b00000100;
+        const LOOKUP_SYSTEM     = 0b_0000_0100;
         /// Read the data of the profile
-        const READ              = 0b00001000;
+        const READ              = 0b_0000_1000;
         /// Reject profiles with a '/'
-        const DENY_BY_PATH      = 0b00010000;
+        const DENY_BY_PATH      = 0b_0001_0000;
         /// Assume that the profile exists in the location with the highest priority
-        const ASSUME_EXISTENCE  = 0b00100000;
+        const ASSUME_EXISTENCE  = 0b_0010_0000;
     }
 }
 impl ProfileFlags {

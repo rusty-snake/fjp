@@ -60,6 +60,11 @@ cp
 
 <https://github.com/rusty-snake/fjp/issues/20>
 
+list
+----
+
+ - `--profile`, `--inc`, `--local` show only thoses files
+
 generate-standalone
 -------------------
 

@@ -47,7 +47,7 @@ $ fjp --help
 Examples
 --------
 
-Open `~/.config/firejail/firefox.profile` in your editor. If it does not exists yet, it is copied form `/etc/firejail`:
+Open `~/.config/firejail/firefox.profile` in your editor. You will be asked to copy the profile from `/etc/firejail` if it does not exists yet:
 
     $ fjp edit firefox
 

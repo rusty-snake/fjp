@@ -21,6 +21,7 @@
 
 use crate::fatal;
 use crate::profile::{Profile, ProfileFlags};
+use crate::utils::input;
 use bitflags::bitflags;
 use clap::ArgMatches;
 use log::{debug, info, warn};
@@ -34,7 +35,6 @@ bitflags! {
     struct Flags: u8 {
         const NULL   = 0b00000000;
         const COPY   = 0b00000001;
-        const CREATE = 0b00000010;
         const TMP    = 0b00000100;
     }
 }
@@ -42,13 +42,12 @@ bitflags! {
 pub fn start(cli: &ArgMatches<'_>) {
     debug!("subcommand: edit");
 
-    #[rustfmt::skip]
-    let flags =
-        if cli.is_present("no-copy") { Flags::NULL } else { Flags::COPY }
-        | if cli.is_present("no-create") { Flags::NULL } else { Flags::CREATE }
-        | if cli.is_present("tmp") { Flags::TMP } else { Flags::NULL };
+    let mut flags = Flags::empty();
+    if cli.is_present("tmp") {
+        flags.insert(Flags::TMP | Flags::COPY);
+    }
 
-    // NOTE: unwrap can't faile here, because PROFILE_NAME is required
+    // NOTE: unwrap can't fail here, because PROFILE_NAME is required
     let profile_name = cli.value_of("PROFILE_NAME").unwrap();
 
     debug!("profile name: {}", profile_name);
@@ -82,24 +81,27 @@ fn prepare_tmp_edit(user_profile: &Path, system_profile: &Path, flags: Flags) {
     let backup_profile = user_profile.with_extension("bak");
 
     if user_profile.exists() {
+        info!("Profile already exists, creating a backup.");
         copy_file(user_profile, &backup_profile)
             .unwrap_or_else(|err| fatal!("backup creation failed: {}", err));
-        info!("creating backup");
+
         prepare_edit(user_profile, system_profile, flags);
+
+        info!("Restoring the backup.");
         rename(&backup_profile, user_profile)
             .unwrap_or_else(|err| fatal!("failed to restore the profile: {}", err));
-        info!("restoring backup");
     } else {
         prepare_edit(user_profile, system_profile, flags);
+
+        info!("Removing the temporary profile.");
         remove_file(user_profile)
             .unwrap_or_else(|err| fatal!("failed to remove the temporary profile: {}", err));
-        info!("removing profile");
     }
 }
 
 fn prepare_edit(user_profile: &Path, system_profile: &Path, flags: Flags) {
-    if flags.contains(Flags::COPY) && !user_profile.exists() && system_profile.exists() {
-        info!("copying the profile");
+    let copy_system_profile2user_profile = || {
+        info!("Copying the profile.");
         copy_file(&system_profile, &user_profile).unwrap_or_else(|err| {
             fatal!(
                 "Failed to copy '{}' to '{}': {}",
@@ -108,11 +110,26 @@ fn prepare_edit(user_profile: &Path, system_profile: &Path, flags: Flags) {
                 err
             )
         });
+    };
+
+    if system_profile.exists() && (flags.contains(Flags::TMP) || !user_profile.exists()) {
+        if flags.contains(Flags::COPY) {
+            copy_system_profile2user_profile();
+        } else {
+            match input("Should the profile be copied? [(y)es/(n)o/(a)bort] ")
+                .unwrap()
+                .to_lowercase()
+                .as_str()
+            {
+                "y" => copy_system_profile2user_profile(),
+                "n" => (),
+                "a" => return,
+                _ => println!("Invalid answer, continue without copying."),
+            }
+        }
     }
 
-    if flags.intersects(Flags::COPY | Flags::CREATE) || user_profile.exists() {
-        open_user_profile(user_profile);
-    }
+    open_user_profile(user_profile);
 }
 
 fn open_user_profile(profile: &Path) {

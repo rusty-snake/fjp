@@ -82,21 +82,12 @@ subcommands:
   - edit:
       about: Edit profiles
       args:
-        - no-copy:
-            long: no-copy
-            help: Do not copy the profile
-            long_help: Do not copy the profile form system to user if it only exits in the system locations.
-        - no-create:
-            long: no-create
-            help: Open only if exits
-            long_help: >
-              Open the editor only if the profile exists in the user location.
-              NOTE: Without --no-copy it is copied first.
         - tmp:
             short: t
             long: tmp
             help: Edit non-persistent
-            long_help: Discard changes after editing.
+            long_help: >
+              Copy the profile if possible and discard all changes after editing.
         - PROFILE_NAME:
             index: 1
             required: true

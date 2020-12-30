@@ -10,11 +10,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - MSRV: 1.45
 - new sub-commands: list, generate-standalone
 - new experimental sub-command: diff
-- make.sh: more control about the installation paths
-- make.sh: support striping binaries
-- make.sh: can build rpms
-- Switch from self written make.sh to meson as build-system
-- add short options
+- ~~make.sh: more control about the installation paths~~
+- ~~make.sh: support striping binaries~~
+- ~~make.sh: can build rpms~~
+- add short options to disable, enable and edit
 - shortnames for profiles on supported sub-commands.
   (e.g. `dc` expands to `disable-common.inc`)
 - edit: If a profile is only found in the system-location ask if it should be copied.
@@ -25,6 +24,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   Previously profiles were copied from /etc/firejail if they don't exists in ~/.config/firejail,
   and renamed if the exists (now they will be copied inside ~/.config/firejail).
 - has: exit with 100 if no profile could we found.
+- Switch from self written make.sh to meson as build-system
 
 ### Removed
 - edit: `--no-create` has been removed. If you don't want to create the profile,

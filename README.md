@@ -1,12 +1,14 @@
-firejail-profile
-================
+fjp &mdash; firejail-profile
+============================
 
 ![](https://github.com/rusty-snake/fjp/workflows/Rust/badge.svg)
-![](https://img.shields.io/badge/rustc-1.45+-blue.svg?logo=rust)
+![](https://img.shields.io/badge/MSRV-1.45-blue.svg?logo=rust)
 ![](https://img.shields.io/github/license/rusty-snake/fjp.svg?color=darkred&logo=gnu)
 ![](https://badgen.net/badge/maintenance/actively-developed/00D000)
 
-A commandline program to deal with firejail profiles.
+A handy command line program to work fast and straightforward with firejail profiles.
+
+fjp is a command-line program written in rust, a modern and safe programming language. It allows you to show, edit, compare, disable or remove firejail profiles. And many more features like search, check, sed or merge will come.
 
 Get started
 -----------
@@ -64,7 +66,7 @@ Show firefox and all its includes. Actual firefox.local, globals.local, firefox.
 
     $ fjp cat firefox
 
-See <https://rusty-snake.github.io/fjp/#examples> for more.
+See <https://rusty-snake.github.io/fjp/#examples> for more examples.
 
 FAQ
 ---

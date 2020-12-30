@@ -1,9 +1,10 @@
 [package]
 name = "macros"
-version = "0.2.0-dev"
+version = "0.2.0-rc1"
+description = "Procedural Macros for fjp"
 authors = ["rusty-snake"]
 edition = "2018"
-description = "Procedural Macros for firejail-profile"
+license = "GPL-3.0-or-later"
 
 [lib]
 proc-macro = true

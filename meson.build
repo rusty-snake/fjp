@@ -1,6 +1,6 @@
 project('fjp',
-# Remebmer to change version in Cargo.toml, macros/Cargo.toml and fjp.spec.
-          version: '0.2.0-dev',
+# Remebmer to change version in Cargo.toml and macros/Cargo.toml too.
+          version: '0.2.0-rc1',
           license: 'GPL-3.0-or-later',
     meson_version: '>= 0.49.0',
   default_options: [

@@ -301,7 +301,7 @@ impl<'a> Profile<'a> {
 pub fn complete_name(name: &str, flags: ProfileFlags) -> Cow<'_, str> {
     if name.contains('/') {
         if flags.contains(ProfileFlags::DENY_BY_PATH) {
-            panic!("Profile names must not contain '/'.");
+            panic!("Profile-names must not contain '/'.");
         } else {
             Cow::Borrowed(name.rsplit('/').next().unwrap())
         }
@@ -437,7 +437,7 @@ mod tests {
     }
 
     #[test]
-    #[should_panic]
+    #[should_panic(expected = "Profile-names must not contain '/'.")]
     fn complete_name_path_deny_by_path_1() {
         complete_name(
             "/etc/firejail/gnome-clocks.profile",
@@ -446,19 +446,19 @@ mod tests {
     }
 
     #[test]
-    #[should_panic]
+    #[should_panic(expected = "Profile-names must not contain '/'.")]
     fn complete_name_path_deny_by_path_2() {
         complete_name("/etc/firejail/gnome-clocks", ProfileFlags::DENY_BY_PATH);
     }
 
     #[test]
-    #[should_panic]
+    #[should_panic(expected = "Profile-names must not contain '/'.")]
     fn complete_name_path_deny_by_path_3() {
         complete_name("etc/firejail/gnome-clocks", ProfileFlags::DENY_BY_PATH);
     }
 
     #[test]
-    #[should_panic]
+    #[should_panic(expected = "Profile-names must not contain '/'.")]
     fn complete_name_path_deny_by_path_4() {
         complete_name(
             "~/etc/firejail/gnome-clocks.profile",
@@ -467,7 +467,7 @@ mod tests {
     }
 
     #[test]
-    #[should_panic]
+    #[should_panic(expected = "Profile-names must not contain '/'.")]
     fn complete_name_path_deny_by_path_5() {
         complete_name("./gnome-clocks.local", ProfileFlags::DENY_BY_PATH);
     }

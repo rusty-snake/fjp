@@ -27,7 +27,7 @@ outputs = [
   app_bin + '.zsh',
 ]
 
-cargo_script = find_program(join_paths(meson.source_root(), 'build-aux/cargo.sh'))
+cargo_script = find_program(meson.source_root() / 'build-aux/cargo.sh')
 custom_target(
   'cargo-build',
   build_by_default: true,
@@ -44,7 +44,7 @@ custom_target(
   ]
 )
 
-install_script = find_program(join_paths(meson.source_root(), 'build-aux/install.sh'))
+install_script = find_program(meson.source_root() / 'build-aux/install.sh')
 meson.add_install_script(
   install_script,
   meson.current_build_dir(),

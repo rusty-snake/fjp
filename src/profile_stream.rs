@@ -21,7 +21,7 @@
 
 #![allow(clippy::cognitive_complexity)]
 
-use crate::utils::join;
+use crate::utils::{join, parse_kv};
 use std::borrow::{Borrow, BorrowMut};
 use std::fmt;
 use std::iter::FromIterator;
@@ -316,6 +316,8 @@ pub enum Command {
     DBusSystemOwn(String),
     DBusSystemTalk(String),
     DisableMnt,
+    /// `Env(String::from("WEBKIT_FORCE_SANDBOX"), String::from("0"))`: `env WEBKIT_FORCE_SANDBOX=0`
+    Env(String, String),
     Hostname(String),
     Ignore(String),
     Include(String),
@@ -388,6 +390,7 @@ impl fmt::Display for Command {
             DBusSystemOwn(name) => write!(f, "dbus-system.own {}", name)?,
             DBusSystemTalk(name) => write!(f, "dbus-system.talk {}", name)?,
             DisableMnt => write!(f, "disable-mnt")?,
+            Env(name, value) => write!(f, "env {}={}", name, value)?,
             Hostname(hostname) => write!(f, "hostname {}", hostname)?,
             Ignore(profile_line) => write!(f, "ignore {}", profile_line)?,
             Include(profile) => write!(f, "include {}", profile)?,
@@ -484,6 +487,10 @@ impl FromStr for Command {
             DBusSystemTalk(name.to_string())
         } else if line == "disable-mnt" {
             DisableMnt
+        } else if let Some(name_and_value) = line.strip_prefix("env ") {
+            parse_kv(name_and_value, '=')
+                .map(|(name, value)| Env(name, value))
+                .ok_or(Error::BadEnv)?
         } else if let Some(hostname) = line.strip_prefix("hostname ") {
             Hostname(hostname.to_string())
         } else if let Some(line) = line.strip_prefix("ignore ") {
@@ -872,6 +879,8 @@ pub enum Error {
     BadCommand,
     #[error("Invalid condition")]
     BadCondition,
+    #[error("Invalid env command")]
+    BadEnv,
     #[error("Invalid protocol")]
     BadProtocol,
     #[error("No command after condition")]

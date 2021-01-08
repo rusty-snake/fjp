@@ -1,5 +1,5 @@
 /*
- * Copyright © 2020 rusty-snake
+ * Copyright © 2020,2021 rusty-snake
  *
  * This file is part of fjp
  *
@@ -158,6 +158,24 @@ where
     } else {
         String::new()
     }
+}
+
+/// Parse a key-value-string separated by a `delimiter` `char`
+///
+/// # Examples
+///
+/// ```
+/// assert_eq!(parse_kv("remove=true", '='), Some(String::from("remove"), String::from("true")));
+/// assert_eq!(parse_kv("remove=", '='), Some(String::from("remove"), String::from("")));
+/// assert_eq!(parse_kv("=true", '='), Some(String::from(""), String::from("true")));
+/// assert_eq!(parse_kv("remove=true", ':'), None);
+/// ```
+pub fn parse_kv(kvpair: &str, delimiter: char) -> Option<(String, String)> {
+    let idx = kvpair.find(delimiter)?;
+    Some((
+        kvpair.split_at(idx).0.to_string(),
+        kvpair.split_at(idx + delimiter.len_utf8()).1.to_string(),
+    ))
 }
 
 //

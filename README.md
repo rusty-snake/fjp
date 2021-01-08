@@ -1,7 +1,7 @@
-fjp &mdash; firejail-profile
-============================
+fjp – firejail-profile
+======================
 
-![](https://github.com/rusty-snake/fjp/workflows/Rust/badge.svg)
+![](https://github.com/rusty-snake/fjp/workflows/Rust CI/badge.svg)
 ![](https://img.shields.io/badge/MSRV-1.45-blue.svg?logo=rust)
 ![](https://img.shields.io/github/license/rusty-snake/fjp.svg?color=darkred&logo=gnu)
 ![](https://badgen.net/badge/maintenance/actively-developed/00D000)
@@ -71,17 +71,17 @@ See <https://rusty-snake.github.io/fjp/#examples> for more examples.
 FAQ
 ---
 
-**1. What does fjp stand for?**
+#### 1. What does fjp stand for?
 
 firejail-profile, but fjp is faster to type.
 
-**2. How can I change the editor?**
+#### 2. How can I change the editor?
 
 fjp reads the `EDITOR` environment-varibale and use `/usr/bin/vim` as fallback.
 To use `nano` as editor, just call `EDITOR=nano fjp edit firefox`. In order to make this
 persistent, add `EDITOR=nano` to your `.bashrc`.
 
-**3. How can I change the log level?**
+#### 3. How can I change the log level?
 
 Set the environment-variable `RUST_LOG` to `trace`, `debug`, `info` (default), `warn` or `error`.  
 Example: `$ RUST_LOG=debug fjp …`

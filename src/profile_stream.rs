@@ -1,5 +1,5 @@
 /*
- * Copyright © 2020 rusty-snake
+ * Copyright © 2020,2021 rusty-snake
  *
  * This file is part of fjp
  *
@@ -275,7 +275,7 @@ impl FromStr for Content {
     type Err = Self;
 
     fn from_str(line: &str) -> Result<Self, Self::Err> {
-        if line == "" {
+        if line.is_empty() {
             Ok(Self::Blank)
         } else if let Some(comment) = line.strip_prefix('#') {
             Ok(Self::Comment(comment.to_string()))

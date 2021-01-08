@@ -1,7 +1,7 @@
 fjp – firejail-profile
 ======================
 
-![](https://github.com/rusty-snake/fjp/workflows/Rust CI/badge.svg)
+![](https://github.com/rusty-snake/fjp/workflows/Rust%20CI/badge.svg)
 ![](https://img.shields.io/badge/MSRV-1.45-blue.svg?logo=rust)
 ![](https://img.shields.io/github/license/rusty-snake/fjp.svg?color=darkred&logo=gnu)
 ![](https://badgen.net/badge/maintenance/actively-developed/00D000)

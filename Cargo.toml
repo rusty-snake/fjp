@@ -1,6 +1,6 @@
 [package]
 name = "fjp"
-version = "0.2.0-rc2"
+version = "0.2.0"
 description = "A handy command line program to work fast and straightforward with firejail profiles."
 authors = ["rusty-snake"]
 edition = "2018"

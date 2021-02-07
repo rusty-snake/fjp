@@ -45,7 +45,6 @@ $ sudo meson install --no-rebuild -C _builddir
 $ fjp --help
 ```
 
-
 Examples
 --------
 

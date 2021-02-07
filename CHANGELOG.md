@@ -5,6 +5,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+
+## [0.2.0] &ndash; 2021-02-07
 ### Added
 - CI using GitHub Actions
 - MSRV: 1.45
@@ -20,7 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - cat: no-globals in now default
-- edit --tmp: consistent behavior: always start editing with the current profile.
+- edit \--tmp: consistent behavior: always start editing with the current profile.
   Previously profiles were copied from /etc/firejail if they don't exists in ~/.config/firejail,
   and renamed if the exists (now they will be copied inside ~/.config/firejail).
 - has: exit with 100 if no profile could we found.
@@ -39,5 +41,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - manpage (incomplete)
 
 
-[Unreleased]: https://github.com/rusty-snake/fjp/compare/master...v0.1.0
+[Unreleased]: https://github.com/rusty-snake/fjp/compare/master...v0.2.0
+[0.2.0]: https://github.com/rusty-snake/fjp/releases/tag/v0.2.0
 [0.1.0]: https://github.com/rusty-snake/fjp/releases/tag/v0.1.0

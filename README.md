@@ -17,5 +17,5 @@ git worktree add ../fjp-gh-pages gh-pages
 cd ../fjp-gh-pages
 bundle config set --local path 'vendor/bundle'
 bundle install
-bundel exec jekyll serve
+bundle exec jekyll serve
 ```

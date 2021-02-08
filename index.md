@@ -101,15 +101,21 @@ Download
 You can download a tar.xz archive with a statically linked 64-bit musl binary
 from <https://github.com/rusty-snake/fjp/releases>. All you need to do then is
 to save the binary in a directory in `$PATH`. In addition you can add one of the
-provided shell-completions-script to your prevered shell.
+provided shell-completions-script to your preffered shell.
 
 ### Install now
 
 #### System
 
-```
+**WARNING:** This command changes the permission of `/usr/local` to be _world writable_!
+Don't use it until this is fixed. If you executed this command already, you should
+check the permissions of `/usr/local` and change them if necessary.
+
+<details><summary> click me! </summary>
+<pre>
 wget -qO- "https://github.com/rusty-snake/fjp/releases/download/v0.2.0/fjp-v0.2.0-x86_64-unknown-linux-musl.tar.xz" | sudo tar -xJf- -C /usr/local
-```
+</pre>
+</details><br>
 
 #### User
 

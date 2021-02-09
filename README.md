@@ -13,6 +13,16 @@ fjp is a command-line program written in rust, a modern and safe programming lan
 Get started
 -----------
 
+### Install prebuild binary
+
+```bash
+wget -qO- "https://github.com/rusty-snake/fjp/releases/download/v0.2.0/fjp-v0.2.0-x86_64-unknown-linux-musl.tar.xz" | tar -xJf- -C $HOME/.local
+```
+
+Read https://rusty-snake.github.io/fjp/#download for more detailed information.
+
+### Build from source
+
 1. Install build dependencies
 ([rust](https://www.rust-lang.org/tools/install) and
 [meson](https://mesonbuild.com/Getting-meson.html))

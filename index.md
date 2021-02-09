@@ -107,15 +107,9 @@ provided shell-completions-script to your preffered shell.
 
 #### System
 
-**WARNING:** This command changes the permission of `/usr/local` to be _world writable_!
-Don't use it until this is fixed. If you executed this command already, you should
-check the permissions of `/usr/local` and change them if necessary.
-
-<details><summary> click me! </summary>
-<pre>
+```
 wget -qO- "https://github.com/rusty-snake/fjp/releases/download/v0.2.0/fjp-v0.2.0-x86_64-unknown-linux-musl.tar.xz" | sudo tar -xJf- -C /usr/local
-</pre>
-</details><br>
+```
 
 #### User
 

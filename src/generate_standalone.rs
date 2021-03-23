@@ -1,5 +1,5 @@
 /*
- * Copyright © 2020 rusty-snake
+ * Copyright © 2020,2021 rusty-snake
  *
  * This file is part of fjp
  *
@@ -102,7 +102,7 @@ pub fn start(cli: &ArgMatches<'_>) {
 }
 
 fn process(
-    profile: &Profile,
+    profile: &Profile<'_>,
     output: &mut dyn IoWrite,
     recusion_level: RecusionLevel,
     flags: Flags,

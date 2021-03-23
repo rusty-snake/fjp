@@ -1,5 +1,5 @@
 /*
- * Copyright © 2020 rusty-snake
+ * Copyright © 2020,2021 rusty-snake
  *
  * This file is part of fjp
  *
@@ -16,6 +16,9 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
+
+#![warn(rust_2018_idioms)]
+#![deny(missing_debug_implementations)]
 
 //! A commandline program to deal with firejail profiles.
 

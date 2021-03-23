@@ -36,7 +36,7 @@ pub struct ProfileStream {
     inner: Vec<Line>,
 }
 impl ProfileStream {
-    /// Check whether `self` contains `content` or no
+    /// Check whether `self` contains `content` or not
     pub fn contains(&self, content: &Content) -> bool {
         self.inner.iter().any(|l| &*l.content == content)
     }

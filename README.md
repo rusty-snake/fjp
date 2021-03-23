@@ -4,7 +4,7 @@ fjp – firejail-profile
 [![](https://github.com/rusty-snake/fjp/workflows/Rust%20CI/badge.svg)](https://github.com/rusty-snake/fjp/actions?query=workflow%3A%22Rust+CI%22+event%3Apush+branch%3Amaster)
 ![](https://img.shields.io/badge/MSRV-1.45-blue.svg?logo=rust)
 [![](https://img.shields.io/static/v1?label=license&message=GPL-3.0-or-later&color=darkred&logo=gnu)](COPYING)
-[![maintenance-status: actively-developed (as of 2021-01-08)](https://img.shields.io/badge/maintenance--status-actively--developed_%28as_of_2021--01--08%29-brightgreen)](https://gist.github.com/rusty-snake/574a91f1df9f97ec77ca308d6d731e29)
+[![maintenance-status: actively-developed (as of 2021-03-22)](https://img.shields.io/badge/maintenance--status-actively--developed_%28as_of_2021--03--22%29-brightgreen)](https://gist.github.com/rusty-snake/574a91f1df9f97ec77ca308d6d731e29)
 
 A handy command line program to work fast and straightforward with firejail profiles.
 

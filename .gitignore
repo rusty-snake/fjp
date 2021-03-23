@@ -3,5 +3,8 @@
 /macros/target
 /man/fjp.man
 /man/fjp.1.gz
+/outdir
 /target
-/*.rpm
+/vendor
+
+*.rpm

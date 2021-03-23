@@ -106,54 +106,24 @@ impl ProfileStream {
         self.inner.iter_mut()
     }
 }
-impl AsMut<Vec<Line>> for ProfileStream {
-    #[inline]
-    fn as_mut(&mut self) -> &mut Vec<Line> {
-        &mut self.inner
-    }
+macro_rules! impl_trait {
+    ($trait_:ty = fn $fname:ident(&$($this:ident)*) -> $rt:ty : $body:expr ) => {
+        impl $trait_ for ProfileStream {
+            #[inline]
+            fn $fname(&$($this)*) -> $rt {
+                $body
+            }
+        }
+    };
 }
-impl AsMut<[Line]> for ProfileStream {
-    #[inline]
-    fn as_mut(&mut self) -> &mut [Line] {
-        &mut self.inner[..]
-    }
-}
-impl AsRef<Vec<Line>> for ProfileStream {
-    #[inline]
-    fn as_ref(&self) -> &Vec<Line> {
-        &self.inner
-    }
-}
-impl AsRef<[Line]> for ProfileStream {
-    #[inline]
-    fn as_ref(&self) -> &[Line] {
-        &self.inner[..]
-    }
-}
-impl Borrow<Vec<Line>> for ProfileStream {
-    #[inline]
-    fn borrow(&self) -> &Vec<Line> {
-        &self.inner
-    }
-}
-impl Borrow<[Line]> for ProfileStream {
-    #[inline]
-    fn borrow(&self) -> &[Line] {
-        &self.inner[..]
-    }
-}
-impl BorrowMut<Vec<Line>> for ProfileStream {
-    #[inline]
-    fn borrow_mut(&mut self) -> &mut Vec<Line> {
-        &mut self.inner
-    }
-}
-impl BorrowMut<[Line]> for ProfileStream {
-    #[inline]
-    fn borrow_mut(&mut self) -> &mut [Line] {
-        &mut self.inner[..]
-    }
-}
+impl_trait!(AsMut<Vec<Line>>     = fn as_mut    (&mut self) -> &mut Vec<Line>: &mut self.inner    );
+impl_trait!(AsMut<[Line]>        = fn as_mut    (&mut self) -> &mut [Line]   : &mut self.inner[..]);
+impl_trait!(AsRef<Vec<Line>>     = fn as_ref    (&self)     -> &Vec<Line>    : &self.inner        );
+impl_trait!(AsRef<[Line]>        = fn as_ref    (&self)     -> &[Line]       : &self.inner[..]    );
+impl_trait!(BorrowMut<Vec<Line>> = fn borrow_mut(&mut self) -> &mut Vec<Line>: &mut self.inner    );
+impl_trait!(BorrowMut<[Line]>    = fn borrow_mut(&mut self) -> &mut [Line]   : &mut self.inner[..]);
+impl_trait!(Borrow<Vec<Line>>    = fn borrow    (&self)     -> &Vec<Line>    : &self.inner        );
+impl_trait!(Borrow<[Line]>       = fn borrow    (&self)     -> &[Line]       : &self.inner[..]    );
 impl Extend<Line> for ProfileStream {
     #[inline]
     fn extend<T>(&mut self, iter: T)
@@ -662,52 +632,6 @@ impl fmt::Display for Conditional {
 }
 
 //
-// Protocol
-//
-
-/// A `Protocol` from firejails `protocol` command
-#[derive(Copy, Clone, Debug, Hash, PartialEq, Eq, PartialOrd, Ord)]
-pub enum Protocol {
-    Unix,
-    Inet,
-    Inet6,
-    Netlink,
-    Packet,
-    Bluetooth,
-}
-impl FromStr for Protocol {
-    type Err = Error;
-
-    fn from_str(proto: &str) -> Result<Self, Self::Err> {
-        match proto {
-            "unix" => Ok(Self::Unix),
-            "inet" => Ok(Self::Inet),
-            "inet6" => Ok(Self::Inet6),
-            "netlink" => Ok(Self::Netlink),
-            "packet" => Ok(Self::Packet),
-            "bluetooth" => Ok(Self::Bluetooth),
-            _ => Err(Error::BadProtocol),
-        }
-    }
-}
-impl fmt::Display for Protocol {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(
-            f,
-            "{}",
-            match self {
-                Self::Unix => "unix",
-                Self::Inet => "inet",
-                Self::Inet6 => "inet6",
-                Self::Netlink => "netlink",
-                Self::Packet => "packet",
-                Self::Bluetooth => "bluetooth",
-            },
-        )
-    }
-}
-
-//
 // Capabilities
 //
 
@@ -877,9 +801,56 @@ impl fmt::Display for DBusPolicy {
 }
 
 //
+// Protocol
+//
+
+/// A `Protocol` from firejails `protocol` command
+#[derive(Copy, Clone, Debug, Hash, PartialEq, Eq, PartialOrd, Ord)]
+pub enum Protocol {
+    Unix,
+    Inet,
+    Inet6,
+    Netlink,
+    Packet,
+    Bluetooth,
+}
+impl FromStr for Protocol {
+    type Err = Error;
+
+    fn from_str(proto: &str) -> Result<Self, Self::Err> {
+        match proto {
+            "unix" => Ok(Self::Unix),
+            "inet" => Ok(Self::Inet),
+            "inet6" => Ok(Self::Inet6),
+            "netlink" => Ok(Self::Netlink),
+            "packet" => Ok(Self::Packet),
+            "bluetooth" => Ok(Self::Bluetooth),
+            _ => Err(Error::BadProtocol),
+        }
+    }
+}
+impl fmt::Display for Protocol {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "{}",
+            match self {
+                Self::Unix => "unix",
+                Self::Inet => "inet",
+                Self::Inet6 => "inet6",
+                Self::Netlink => "netlink",
+                Self::Packet => "packet",
+                Self::Bluetooth => "bluetooth",
+            },
+        )
+    }
+}
+
+//
 // Error
 //
 
+#[non_exhaustive]
 #[derive(Clone, Debug, thiserror::Error, PartialEq)]
 pub enum Error {
     #[error("Invalid capability")]

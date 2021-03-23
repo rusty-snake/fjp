@@ -8,6 +8,10 @@ project('fjp',
 
 subdir('src')
 
+if get_option('manpage')
+  subdir('man')
+endif
+
 install_data(
   ['AUTHORS', 'CHANGELOG.md', 'COPYING', 'README.md', 'TODO.md'],
   install_dir: get_option('datadir') / 'doc' / meson.project_name()

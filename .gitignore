@@ -1,8 +1,6 @@
 /_builddir
 /macros/Cargo.lock
 /macros/target
-/man/fjp.man
-/man/fjp.1.gz
 /outdir
 /target
 /vendor

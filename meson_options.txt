@@ -1,0 +1,2 @@
+option('manpage', type: 'boolean', value: false,
+       description: 'Build and install a manpage for fjp.')

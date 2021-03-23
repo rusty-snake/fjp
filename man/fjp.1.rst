@@ -1,0 +1,173 @@
+###
+fjp
+###
+
+a handy command line program to work fast and straightforward with firejail profiles
+####################################################################################
+
+:Manual section: 1
+:Version: 0.3.0-dev
+
+SYNOPSIS
+========
+
+.. code-block:: sh
+
+  fjp <SUBCOMMAND> <SUBCOMMAND-ARGS>
+
+DESCRIPTION
+===========
+
+fjp is a command-line program written in Rust, a modern and safe programming
+language. It allows you to show, edit, compare, disable or remove firejail
+profiles. And many more features like search, check, sed or merge will come.
+
+SUBCOMMANDS
+===========
+
+cat
+---
+
+Show a profile, its .local and its redirect profile.
+
+.. code-block:: sh
+
+  fjp cat [FLAGS] <PROFILE_NAME>
+
+``--no-locals``
+  Do not show .local files.
+
+``--no-pager``
+  Do not pipe output into a pager.
+
+``--no-redirects``
+  Do not show redirect profiles.
+
+diff
+----
+
+Show the differences between two profiles. (experimental)
+
+.. code-block:: sh
+
+  fjp diff [OPTIONS] <PROFILE_NAME1> <PROFILE_NAME2>
+
+``-f, --format <format>``
+  specify the diff format [default: simple] [possible values: color, simple]
+
+disable
+-------
+
+Disable profiles
+
+.. code-block:: sh
+
+  fjp disable [FLAGS] <PROFILE_NAME>
+
+``-l, --list``
+  List all disabled profiles
+
+``-u, --user``
+  Disable ~/.config/firejail
+
+edit
+----
+
+.. code-block:: sh
+
+  fjp edit [FLAGS] <PROFILE_NAME>
+
+``-t, --tmp``
+  Edit non-persistent
+
+enable
+------
+
+Enable profiles
+
+.. code-block:: sh
+
+  fjp enable [FLAGS] <PROFILE_NAME>
+
+``-u, --user``
+  Enable ~/.config/firejail
+
+generate-standalone
+-------------------
+
+Copy the profile and all its includes into one file.
+
+.. code-block:: sh
+
+  fjp generate-standalone [FLAGS] [OPTIONS] <PROFILE_NAME>
+
+``--keep-inc``
+  Keep all includes of .inc's
+
+``--keep-locals``
+  Keep all includes of .local's
+
+``-o, --output <OUTPUT-FILE>``
+  The name of the file to write results
+
+has
+---
+
+Look if a profile exists
+
+.. code-block:: sh
+
+  fjp has <PROFILE_NAME>
+
+list
+----
+
+List all user profile
+
+.. code-block:: sh
+
+  fjp list
+
+rm
+--
+
+Remove profiles
+
+.. code-block:: sh
+
+  fjp rm <PROFILE_NAMES>...
+
+EXIT STATUS
+===========
+
+| 0    if OK
+| 1    if Error
+| 100  if ``has`` could not find a profile
+
+ENVIRONMENT
+===========
+
+EDITOR
+  Respected by ``edit``.
+
+RUST_LOG
+  Set log level, one of error, warn, info, debug or trace.
+
+RUST_LOG_STYLE
+  Set log color: auto, always or never
+
+EXAMPLES
+========
+
+can be found at https://rusty-snake.github.io/fjp/#examples.
+
+REPORTING BUGS
+==============
+
+Bugs can be reported at https://github.com/rusty-snake/fjp/issues
+and questions can be asked at https://github.com/rusty-snake/fjp/discussions.
+
+SEE ALSO
+========
+
+firejail-profiles(5)

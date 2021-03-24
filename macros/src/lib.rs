@@ -3,7 +3,7 @@ extern crate proc_macro;
 use std::env;
 use std::process;
 
-/// Create a [`String`](std::string::String) containing the version of fjp.
+/// Create a [`&str`](std::str) containing the version of fjp.
 ///
 /// ### Format:
 ///  - `VERSION[+COMMIT[-dirty]]`

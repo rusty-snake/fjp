@@ -1,5 +1,6 @@
 [package]
 name = "fjp"
+# Remebmer to change version in meson.build and macros/Cargo.toml too.
 version = "0.3.0-dev"
 description = "A handy command line program to work fast and straightforward with firejail profiles."
 authors = ["rusty-snake"]

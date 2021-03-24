@@ -588,6 +588,7 @@ pub enum Conditional {
     HasNet(Command),
     HasNodbus(Command),
     HasNosound(Command),
+    HasPrivate(Command),
     HasX11(Command),
 }
 impl FromStr for Conditional {
@@ -610,6 +611,8 @@ impl FromStr for Conditional {
             Ok(Self::HasNodbus(cmd.parse()?))
         } else if con == "?HAS_NOSOUND:" {
             Ok(Self::HasNosound(cmd.parse()?))
+        } else if con == "?HAS_PRIVATE: " {
+            Ok(Self::HasPrivate(cmd.parse()?))
         } else if con == "?HAS_X11:" {
             Ok(Self::HasX11(cmd.parse()?))
         } else {
@@ -626,6 +629,7 @@ impl fmt::Display for Conditional {
             Self::HasNet(cmd) => write!(f, "?HAS_NET: {}", cmd),
             Self::HasNodbus(cmd) => write!(f, "?HAS_NODBUS: {}", cmd),
             Self::HasNosound(cmd) => write!(f, "?HAS_NOSOUND: {}", cmd),
+            Self::HasPrivate(cmd) => write!(f, "?HAS_PRIVATE: {}", cmd),
             Self::HasX11(cmd) => write!(f, "?HAS_X11: {}", cmd),
         }
     }

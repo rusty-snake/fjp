@@ -274,7 +274,9 @@ pub enum Command {
     AllowDebuggers,
     Allusers,
     Apparmor,
+    Bind(String, String),
     Blacklist(String),
+    BlacklistNolog(String),
     Caps,
     CapsDropAll,
     CapsDrop(Vec<Capabilities>),
@@ -333,9 +335,12 @@ pub enum Command {
     Seccomp(Option<Vec<String>>),
     SeccompBlockSecondary,
     SeccompDrop(Vec<String>),
+    SeccompErrorAction(SeccompErrorAction),
     ShellNone,
+    Tmpfs(String),
     Tracelog,
     Whitelist(String),
+    WriteableEtc,
     WritableRunUser,
     WritableVar,
     WritableVarLog,
@@ -348,7 +353,9 @@ impl fmt::Display for Command {
             AllowDebuggers => write!(f, "allow-debuggers")?,
             Allusers => write!(f, "allusers")?,
             Apparmor => write!(f, "apparmor")?,
+            Bind(src_path, dst_path) => write!(f, "bind {},{}", src_path, dst_path)?,
             Blacklist(path) => write!(f, "blacklist {}", path)?,
+            BlacklistNolog(path) => write!(f, "blacklist-nolog {}", path)?,
             Caps => write!(f, "caps")?,
             CapsDropAll => write!(f, "caps.drop all")?,
             CapsDrop(caps) => write!(f, "caps.drop {}", join(',', caps))?,
@@ -405,9 +412,12 @@ impl fmt::Display for Command {
             Seccomp(Some(syscalls)) => write!(f, "seccomp {}", syscalls.join(","))?,
             SeccompBlockSecondary => write!(f, "seccomp.block-secondary")?,
             SeccompDrop(syscalls) => write!(f, "seccomp.drop {}", syscalls.join(","))?,
+            SeccompErrorAction(action) => write!(f, "seccomp-error-action {}", action)?,
             ShellNone => write!(f, "shell none")?,
+            Tmpfs(path) => write!(f, "tmpfs {}", path)?,
             Tracelog => write!(f, "tracelog")?,
             Whitelist(path) => write!(f, "whitelist {}", path)?,
+            WriteableEtc => write!(f, "writable-etc")?,
             WritableRunUser => write!(f, "writable-run-user")?,
             WritableVar => write!(f, "writable-var")?,
             WritableVarLog => write!(f, "writable-var-log")?,
@@ -429,8 +439,14 @@ impl FromStr for Command {
             Allusers
         } else if line == "apparmor" {
             Apparmor
+        } else if let Some(paths) = line.strip_prefix("bind ") {
+            parse_kv(paths, ',')
+                .map(|(src, dst)| Bind(src, dst))
+                .ok_or(Error::BadBind)?
         } else if let Some(path) = line.strip_prefix("blacklist ") {
             Blacklist(path.to_string())
+        } else if let Some(path) = line.strip_prefix("blacklist-nolog ") {
+            BlacklistNolog(path.to_string())
         } else if line == "caps" {
             Caps
         } else if line == "caps.drop all" {
@@ -554,12 +570,18 @@ impl FromStr for Command {
             SeccompBlockSecondary
         } else if let Some(syscalls) = line.strip_prefix("seccomp.drop ") {
             SeccompDrop(syscalls.split(',').map(String::from).collect())
+        } else if let Some(action) = line.strip_prefix("seccomp-error-action ") {
+            SeccompErrorAction(action.parse()?)
         } else if line == "shell none" {
             ShellNone
+        } else if let Some(path) = line.strip_prefix("tmpfs ") {
+            Tmpfs(path.to_string())
         } else if line == "tracelog" {
             Tracelog
         } else if let Some(path) = line.strip_prefix("whitelist ") {
             Whitelist(path.to_string())
+        } else if line == "writable-etc" {
+            WriteableEtc
         } else if line == "writable-run-user" {
             WritableRunUser
         } else if line == "writable-var" {
@@ -850,6 +872,57 @@ impl fmt::Display for Protocol {
     }
 }
 
+macro_rules! seccomp_error_action {
+    ( $( $act:ident ),* $(,)? ) => {
+        /// A action for firejails `seccomp-error-action`
+        #[derive(Copy, Clone, Debug, Eq, Hash, PartialEq)]
+        pub enum SeccompErrorAction {
+            Kill,
+            Log,
+            $( $act ),*
+        }
+        impl fmt::Display for SeccompErrorAction {
+            fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+                match self {
+                    Self::Kill => write!(f, "kill"),
+                    Self::Log => write!(f, "log"),
+                    $( Self::$act => write!(f, stringify!($act)), )*
+                }
+            }
+        }
+        impl FromStr for SeccompErrorAction {
+            type Err = Error;
+
+            fn from_str(s: &str) -> Result<Self, Self::Err> {
+                match s {
+                    "kill" => Ok(Self::Kill),
+                    "log" => Ok(Self::Log),
+                    $( stringify!($act) => Ok(Self::$act), )*
+                    _ => Err(Error::BadSeccompErrorAction),
+                }
+            }
+        }
+    };
+}
+#[rustfmt::skip]
+seccomp_error_action! {
+    // gcc -dM -E /usr/include/errno.h | grep -E "^#define E" | cut -d" " -f2 | sort | tr '\n' ',' | sed "s/,/, /g"
+    E2BIG, EACCES, EADDRINUSE, EADDRNOTAVAIL, EADV, EAFNOSUPPORT, EAGAIN, EALREADY, EBADE, EBADF,
+    EBADFD, EBADMSG, EBADR, EBADRQC, EBADSLT, EBFONT, EBUSY, ECANCELED, ECHILD, ECHRNG, ECOMM,
+    ECONNABORTED, ECONNREFUSED, ECONNRESET, EDEADLK, EDEADLOCK, EDESTADDRREQ, EDOM, EDOTDOT, EDQUOT,
+    EEXIST, EFAULT, EFBIG, EHOSTDOWN, EHOSTUNREACH, EHWPOISON, EIDRM, EILSEQ, EINPROGRESS, EINTR,
+    EINVAL, EIO, EISCONN, EISDIR, EISNAM, EKEYEXPIRED, EKEYREJECTED, EKEYREVOKED, EL2HLT, EL2NSYNC,
+    EL3HLT, EL3RST, ELIBACC, ELIBBAD, ELIBEXEC, ELIBMAX, ELIBSCN, ELNRNG, ELOOP, EMEDIUMTYPE,
+    EMFILE, EMLINK, EMSGSIZE, EMULTIHOP, ENAMETOOLONG, ENAVAIL, ENETDOWN, ENETRESET, ENETUNREACH,
+    ENFILE, ENOANO, ENOBUFS, ENOCSI, ENODATA, ENODEV, ENOENT, ENOEXEC, ENOKEY, ENOLCK, ENOLINK,
+    ENOMEDIUM, ENOMEM, ENOMSG, ENONET, ENOPKG, ENOPROTOOPT, ENOSPC, ENOSR, ENOSTR, ENOSYS, ENOTBLK,
+    ENOTCONN, ENOTDIR, ENOTEMPTY, ENOTNAM, ENOTRECOVERABLE, ENOTSOCK, ENOTSUP, ENOTTY, ENOTUNIQ,
+    ENXIO, EOPNOTSUPP, EOVERFLOW, EOWNERDEAD, EPERM, EPFNOSUPPORT, EPIPE, EPROTO, EPROTONOSUPPORT,
+    EPROTOTYPE, ERANGE, EREMCHG, EREMOTE, EREMOTEIO, ERESTART, ERFKILL, EROFS, ESHUTDOWN,
+    ESOCKTNOSUPPORT, ESPIPE, ESRCH, ESRMNT, ESTALE, ESTRPIPE, ETIME, ETIMEDOUT, ETOOMANYREFS,
+    ETXTBSY, EUCLEAN, EUNATCH, EUSERS, EWOULDBLOCK, EXDEV, EXFULL,
+}
+
 //
 // Error
 //
@@ -857,6 +930,8 @@ impl fmt::Display for Protocol {
 #[non_exhaustive]
 #[derive(Clone, Debug, thiserror::Error, PartialEq)]
 pub enum Error {
+    #[error("Invalid bind command")]
+    BadBind,
     #[error("Invalid capability")]
     BadCap,
     #[error("Invalid command")]
@@ -867,6 +942,8 @@ pub enum Error {
     BadEnv,
     #[error("Invalid protocol")]
     BadProtocol,
+    #[error("Invalid seccomp-error-action")]
+    BadSeccompErrorAction,
     #[error("No command after condition")]
     EmptyCondition,
 }

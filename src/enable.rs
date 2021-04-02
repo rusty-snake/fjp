@@ -1,5 +1,5 @@
 /*
- * Copyright © 2020 rusty-snake
+ * Copyright © 2020,2021 The fjp Authors
  *
  * This file is part of fjp
  *

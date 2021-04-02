@@ -126,7 +126,16 @@ List all user profile
 
 .. code-block:: sh
 
-  fjp list
+  fjp list [FLAGS]
+
+``--incs``
+  List only .inc
+
+``--locals``
+  List only .local
+
+``--profiles``
+  List only .profile
 
 rm
 --

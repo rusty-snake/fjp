@@ -5,8 +5,8 @@ fjp
 a handy command line program to work fast and straightforward with firejail profiles
 ####################################################################################
 
+:Version: @VERSION@
 :Manual section: 1
-:Version: 0.3.0-dev
 
 SYNOPSIS
 ========

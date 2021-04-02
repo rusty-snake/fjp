@@ -106,24 +106,34 @@ impl ProfileStream {
         self.inner.iter_mut()
     }
 }
-macro_rules! impl_trait {
-    ($trait_:ty = fn $fname:ident(&$($this:ident)*) -> $rt:ty : $body:expr ) => {
-        impl $trait_ for ProfileStream {
-            #[inline]
-            fn $fname(&$($this)*) -> $rt {
-                $body
+macro_rules! impl_borrow_and_convert_traits {
+    ( $( $trait_:ty = fn $fname:ident$params:tt -> $rt:ty : $body:expr; )* ) => {
+        $(
+            impl $trait_ for ProfileStream {
+                #[inline]
+                fn $fname$params -> $rt {
+                    $body
+                }
             }
-        }
+        )*
     };
 }
-impl_trait!(AsMut<Vec<Line>>     = fn as_mut    (&mut self) -> &mut Vec<Line>: &mut self.inner    );
-impl_trait!(AsMut<[Line]>        = fn as_mut    (&mut self) -> &mut [Line]   : &mut self.inner[..]);
-impl_trait!(AsRef<Vec<Line>>     = fn as_ref    (&self)     -> &Vec<Line>    : &self.inner        );
-impl_trait!(AsRef<[Line]>        = fn as_ref    (&self)     -> &[Line]       : &self.inner[..]    );
-impl_trait!(BorrowMut<Vec<Line>> = fn borrow_mut(&mut self) -> &mut Vec<Line>: &mut self.inner    );
-impl_trait!(BorrowMut<[Line]>    = fn borrow_mut(&mut self) -> &mut [Line]   : &mut self.inner[..]);
-impl_trait!(Borrow<Vec<Line>>    = fn borrow    (&self)     -> &Vec<Line>    : &self.inner        );
-impl_trait!(Borrow<[Line]>       = fn borrow    (&self)     -> &[Line]       : &self.inner[..]    );
+impl_borrow_and_convert_traits! {
+    AsMut<Vec<Line>>     = fn as_mut(&mut self)     -> &mut Vec<Line>: &mut self.inner    ;
+    AsMut<[Line]>        = fn as_mut(&mut self)     -> &mut [Line]   : &mut self.inner[..];
+    AsRef<Vec<Line>>     = fn as_ref(&self)         -> &Vec<Line>    : &self.inner        ;
+    AsRef<[Line]>        = fn as_ref(&self)         -> &[Line]       : &self.inner[..]    ;
+    BorrowMut<Vec<Line>> = fn borrow_mut(&mut self) -> &mut Vec<Line>: &mut self.inner    ;
+    BorrowMut<[Line]>    = fn borrow_mut(&mut self) -> &mut [Line]   : &mut self.inner[..];
+    Borrow<Vec<Line>>    = fn borrow(&self)         -> &Vec<Line>    : &self.inner        ;
+    Borrow<[Line]>       = fn borrow(&self)         -> &[Line]       : &self.inner[..]    ;
+    From<Vec<Line>>      = fn from(v: Vec<Line>)    -> Self          : Self { inner: v }  ;
+}
+impl From<ProfileStream> for Vec<Line> {
+    fn from(ps: ProfileStream) -> Self {
+        ps.inner
+    }
+}
 impl Extend<Line> for ProfileStream {
     #[inline]
     fn extend<T>(&mut self, iter: T)
@@ -350,81 +360,79 @@ impl fmt::Display for Command {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         use Command::*;
         match self {
-            AllowDebuggers => write!(f, "allow-debuggers")?,
-            Allusers => write!(f, "allusers")?,
-            Apparmor => write!(f, "apparmor")?,
-            Bind(src_path, dst_path) => write!(f, "bind {},{}", src_path, dst_path)?,
-            Blacklist(path) => write!(f, "blacklist {}", path)?,
-            BlacklistNolog(path) => write!(f, "blacklist-nolog {}", path)?,
-            Caps => write!(f, "caps")?,
-            CapsDropAll => write!(f, "caps.drop all")?,
-            CapsDrop(caps) => write!(f, "caps.drop {}", join(',', caps))?,
-            CapsKeep(caps) => write!(f, "caps.keep {}", join(',', caps))?,
-            DBusUser(policy) => write!(f, "dbus-user {}", policy)?,
-            DBusUserOwn(name) => write!(f, "dbus-user.own {}", name)?,
-            DBusUserTalk(name) => write!(f, "dbus-user.talk {}", name)?,
-            DBusSystem(policy) => write!(f, "dbus-system {}", policy)?,
-            DBusSystemOwn(name) => write!(f, "dbus-system.own {}", name)?,
-            DBusSystemTalk(name) => write!(f, "dbus-system.talk {}", name)?,
-            DisableMnt => write!(f, "disable-mnt")?,
-            Env(name, value) => write!(f, "env {}={}", name, value)?,
-            Hostname(hostname) => write!(f, "hostname {}", hostname)?,
-            Ignore(profile_line) => write!(f, "ignore {}", profile_line)?,
-            Include(profile) => write!(f, "include {}", profile)?,
-            IpcNamespace => write!(f, "ipc-namespace")?,
-            JoinOrStart(name) => write!(f, "join-or-start {}", name)?,
-            MachineId => write!(f, "machine-id")?,
-            MemoryDenyWriteExecute => write!(f, "memory-deny-write-execute")?,
-            Mkdir(path) => write!(f, "mkdir {}", path)?,
-            Mkfile(path) => write!(f, "mkfile {}", path)?,
-            Name(name) => write!(f, "name {}", name)?,
-            Netfilter => write!(f, "netfilter")?,
-            NetNone => write!(f, "net none")?,
-            No3d => write!(f, "no3d")?,
-            Noblacklist(path) => write!(f, "noblacklist {}", path)?,
-            Nodvd => write!(f, "nodvd")?,
-            Noexec(path) => write!(f, "noexec {}", path)?,
-            Nogroups => write!(f, "nogroups")?,
-            Nonewprivs => write!(f, "nonewprivs")?,
-            Noroot => write!(f, "noroot")?,
-            Nosound => write!(f, "nosound")?,
-            Notv => write!(f, "notv")?,
-            Nou2f => write!(f, "nou2f")?,
-            Novideo => write!(f, "novideo")?,
-            Nowhitelist(path) => write!(f, "nowhitelist {}", path)?,
-            Private(None) => write!(f, "private")?,
-            Private(Some(path)) => write!(f, "private {}", path)?,
-            PrivateBin(bins) => write!(f, "private-bin {}", bins.join(","))?,
-            PrivateCache => write!(f, "private-cache")?,
-            PrivateCwd(path) => write!(f, "private-cwd {}", path)?,
-            PrivateDev => write!(f, "private-dev")?,
-            PrivateEtc(files) => write!(f, "private-etc {}", files.join(","))?,
-            PrivateLib(None) => write!(f, "private-lib")?,
-            PrivateLib(Some(files)) => write!(f, "private-lib {}", files.join(","))?,
-            PrivateOpt(files) => write!(f, "private-opt {}", files.join(","))?,
-            PrivateSrv(files) => write!(f, "private-srv {}", files.join(","))?,
-            PrivateTmp => write!(f, "private-tmp")?,
-            Protocol(protocols) => write!(f, "protocol {}", join(",", protocols))?,
-            Quiet => write!(f, "quiet")?,
-            ReadOnly(path) => write!(f, "read-only {}", path)?,
-            ReadWrite(path) => write!(f, "read-write {}", path)?,
-            Seccomp(None) => write!(f, "seccomp")?,
-            Seccomp(Some(syscalls)) => write!(f, "seccomp {}", syscalls.join(","))?,
-            SeccompBlockSecondary => write!(f, "seccomp.block-secondary")?,
-            SeccompDrop(syscalls) => write!(f, "seccomp.drop {}", syscalls.join(","))?,
-            SeccompErrorAction(action) => write!(f, "seccomp-error-action {}", action)?,
-            ShellNone => write!(f, "shell none")?,
-            Tmpfs(path) => write!(f, "tmpfs {}", path)?,
-            Tracelog => write!(f, "tracelog")?,
-            Whitelist(path) => write!(f, "whitelist {}", path)?,
-            WriteableEtc => write!(f, "writable-etc")?,
-            WritableRunUser => write!(f, "writable-run-user")?,
-            WritableVar => write!(f, "writable-var")?,
-            WritableVarLog => write!(f, "writable-var-log")?,
-            X11None => write!(f, "x11 none")?,
-            //_ => unimplemented!(),
+            AllowDebuggers => write!(f, "allow-debuggers"),
+            Allusers => write!(f, "allusers"),
+            Apparmor => write!(f, "apparmor"),
+            Bind(src_path, dst_path) => write!(f, "bind {},{}", src_path, dst_path),
+            Blacklist(path) => write!(f, "blacklist {}", path),
+            BlacklistNolog(path) => write!(f, "blacklist-nolog {}", path),
+            Caps => write!(f, "caps"),
+            CapsDropAll => write!(f, "caps.drop all"),
+            CapsDrop(caps) => write!(f, "caps.drop {}", join(',', caps)),
+            CapsKeep(caps) => write!(f, "caps.keep {}", join(',', caps)),
+            DBusUser(policy) => write!(f, "dbus-user {}", policy),
+            DBusUserOwn(name) => write!(f, "dbus-user.own {}", name),
+            DBusUserTalk(name) => write!(f, "dbus-user.talk {}", name),
+            DBusSystem(policy) => write!(f, "dbus-system {}", policy),
+            DBusSystemOwn(name) => write!(f, "dbus-system.own {}", name),
+            DBusSystemTalk(name) => write!(f, "dbus-system.talk {}", name),
+            DisableMnt => write!(f, "disable-mnt"),
+            Env(name, value) => write!(f, "env {}={}", name, value),
+            Hostname(hostname) => write!(f, "hostname {}", hostname),
+            Ignore(profile_line) => write!(f, "ignore {}", profile_line),
+            Include(profile) => write!(f, "include {}", profile),
+            IpcNamespace => write!(f, "ipc-namespace"),
+            JoinOrStart(name) => write!(f, "join-or-start {}", name),
+            MachineId => write!(f, "machine-id"),
+            MemoryDenyWriteExecute => write!(f, "memory-deny-write-execute"),
+            Mkdir(path) => write!(f, "mkdir {}", path),
+            Mkfile(path) => write!(f, "mkfile {}", path),
+            Name(name) => write!(f, "name {}", name),
+            Netfilter => write!(f, "netfilter"),
+            NetNone => write!(f, "net none"),
+            No3d => write!(f, "no3d"),
+            Noblacklist(path) => write!(f, "noblacklist {}", path),
+            Nodvd => write!(f, "nodvd"),
+            Noexec(path) => write!(f, "noexec {}", path),
+            Nogroups => write!(f, "nogroups"),
+            Nonewprivs => write!(f, "nonewprivs"),
+            Noroot => write!(f, "noroot"),
+            Nosound => write!(f, "nosound"),
+            Notv => write!(f, "notv"),
+            Nou2f => write!(f, "nou2f"),
+            Novideo => write!(f, "novideo"),
+            Nowhitelist(path) => write!(f, "nowhitelist {}", path),
+            Private(None) => write!(f, "private"),
+            Private(Some(path)) => write!(f, "private {}", path),
+            PrivateBin(bins) => write!(f, "private-bin {}", bins.join(",")),
+            PrivateCache => write!(f, "private-cache"),
+            PrivateCwd(path) => write!(f, "private-cwd {}", path),
+            PrivateDev => write!(f, "private-dev"),
+            PrivateEtc(files) => write!(f, "private-etc {}", files.join(",")),
+            PrivateLib(None) => write!(f, "private-lib"),
+            PrivateLib(Some(files)) => write!(f, "private-lib {}", files.join(",")),
+            PrivateOpt(files) => write!(f, "private-opt {}", files.join(",")),
+            PrivateSrv(files) => write!(f, "private-srv {}", files.join(",")),
+            PrivateTmp => write!(f, "private-tmp"),
+            Protocol(protocols) => write!(f, "protocol {}", join(",", protocols)),
+            Quiet => write!(f, "quiet"),
+            ReadOnly(path) => write!(f, "read-only {}", path),
+            ReadWrite(path) => write!(f, "read-write {}", path),
+            Seccomp(None) => write!(f, "seccomp"),
+            Seccomp(Some(syscalls)) => write!(f, "seccomp {}", syscalls.join(",")),
+            SeccompBlockSecondary => write!(f, "seccomp.block-secondary"),
+            SeccompDrop(syscalls) => write!(f, "seccomp.drop {}", syscalls.join(",")),
+            SeccompErrorAction(action) => write!(f, "seccomp-error-action {}", action),
+            ShellNone => write!(f, "shell none"),
+            Tmpfs(path) => write!(f, "tmpfs {}", path),
+            Tracelog => write!(f, "tracelog"),
+            Whitelist(path) => write!(f, "whitelist {}", path),
+            WriteableEtc => write!(f, "writable-etc"),
+            WritableRunUser => write!(f, "writable-run-user"),
+            WritableVar => write!(f, "writable-var"),
+            WritableVarLog => write!(f, "writable-var-log"),
+            X11None => write!(f, "x11 none"),
         }
-        Ok(())
     }
 }
 impl FromStr for Command {
@@ -657,153 +665,88 @@ impl fmt::Display for Conditional {
     }
 }
 
+macro_rules! values {
+    (
+        $( #[ $attr:meta ] )*
+        pub enum $T:ident {
+            $( $variant:ident = $value:literal, )*
+            _ = $from_str_error:path,
+        }
+    ) => {
+        $( #[ $attr ] )*
+        pub enum $T {
+            $( $variant ),*
+        }
+        impl fmt::Display for $T {
+            fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+                match self {
+                    $( Self::$variant => write!(f, $value), )*
+                }
+            }
+        }
+        impl FromStr for $T {
+            type Err = Error;
+
+            fn from_str(s: &str) -> Result<Self, Self::Err> {
+                match s {
+                    $( $value => Ok(Self::$variant), )*
+                    _ => Err($from_str_error),
+                }
+            }
+        }
+    };
+}
+
 //
 // Capabilities
 //
 
-/// Caps used by the various `caps` commands
-#[derive(Copy, Clone, Debug, Eq, Hash, PartialEq)]
-pub enum Capabilities {
-    AuditControl,
-    AuditRead,
-    AuditWrite,
-    BlockSuspend,
-    Bpf,
-    CheckpointRestore,
-    Chown,
-    DacOverride,
-    DacReadSearch,
-    Fowner,
-    Fsetid,
-    IpcLock,
-    IpcOwner,
-    Kill,
-    Lease,
-    LinuxImmutable,
-    MacAdmin,
-    MacOverride,
-    Mknod,
-    NetAdmin,
-    NetBindService,
-    NetBroadcast,
-    NetRaw,
-    Perfmon,
-    Setfcap,
-    Setgid,
-    Setpcap,
-    Setuid,
-    SysAdmin,
-    SysBoot,
-    SysChroot,
-    SysModule,
-    SysNice,
-    SysPacct,
-    SysPtrace,
-    SysRawio,
-    SysResource,
-    SysTime,
-    SysTtyConfig,
-    Syslog,
-    WakeAlarm,
-}
-impl fmt::Display for Capabilities {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        use Capabilities::*;
-        match self {
-            AuditControl => write!(f, "audit_control")?,
-            AuditRead => write!(f, "audit_read")?,
-            AuditWrite => write!(f, "audit_write")?,
-            BlockSuspend => write!(f, "block_suspend")?,
-            Bpf => write!(f, "bpf")?,
-            CheckpointRestore => write!(f, "checkpoint_restore")?,
-            Chown => write!(f, "chown")?,
-            DacOverride => write!(f, "dac_override")?,
-            DacReadSearch => write!(f, "dac_read_search")?,
-            Fowner => write!(f, "fowner")?,
-            Fsetid => write!(f, "fsetid")?,
-            IpcLock => write!(f, "ipc_lock")?,
-            IpcOwner => write!(f, "ipc_owner")?,
-            Kill => write!(f, "kill")?,
-            Lease => write!(f, "lease")?,
-            LinuxImmutable => write!(f, "linux_immutable")?,
-            MacAdmin => write!(f, "mac_admin")?,
-            MacOverride => write!(f, "mac_override")?,
-            Mknod => write!(f, "mknod")?,
-            NetAdmin => write!(f, "net_admin")?,
-            NetBindService => write!(f, "net_bind_service")?,
-            NetBroadcast => write!(f, "net_broadcast")?,
-            NetRaw => write!(f, "net_raw")?,
-            Perfmon => write!(f, "perfmon")?,
-            Setfcap => write!(f, "setfcap")?,
-            Setgid => write!(f, "setgid")?,
-            Setpcap => write!(f, "setpcap")?,
-            Setuid => write!(f, "setuid")?,
-            SysAdmin => write!(f, "sys_admin")?,
-            SysBoot => write!(f, "sys_boot")?,
-            SysChroot => write!(f, "sys_chroot")?,
-            SysModule => write!(f, "sys_module")?,
-            SysNice => write!(f, "sys_nice")?,
-            SysPacct => write!(f, "sys_pacct")?,
-            SysPtrace => write!(f, "sys_ptrace")?,
-            SysRawio => write!(f, "sys_rawio")?,
-            SysResource => write!(f, "sys_resource")?,
-            SysTime => write!(f, "sys_time")?,
-            SysTtyConfig => write!(f, "sys_tty_config")?,
-            Syslog => write!(f, "syslog")?,
-            WakeAlarm => write!(f, "wake_alarm")?,
-        }
-        Ok(())
-    }
-}
-impl FromStr for Capabilities {
-    type Err = Error;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        use Capabilities::*;
-        match s {
-            "audit_control" => Ok(AuditControl),
-            "audit_read" => Ok(AuditRead),
-            "audit_write" => Ok(AuditWrite),
-            "block_suspend" => Ok(BlockSuspend),
-            "bpf" => Ok(Bpf),
-            "checkpoint_restore" => Ok(CheckpointRestore),
-            "chown" => Ok(Chown),
-            "dac_override" => Ok(DacOverride),
-            "dac_read_search" => Ok(DacReadSearch),
-            "fowner" => Ok(Fowner),
-            "fsetid" => Ok(Fsetid),
-            "ipc_lock" => Ok(IpcLock),
-            "ipc_owner" => Ok(IpcOwner),
-            "kill" => Ok(Kill),
-            "lease" => Ok(Lease),
-            "linux_immutable" => Ok(LinuxImmutable),
-            "mac_admin" => Ok(MacAdmin),
-            "mac_override" => Ok(MacOverride),
-            "mknod" => Ok(Mknod),
-            "net_admin" => Ok(NetAdmin),
-            "net_bind_service" => Ok(NetBindService),
-            "net_broadcast" => Ok(NetBroadcast),
-            "net_raw" => Ok(NetRaw),
-            "perfmon" => Ok(Perfmon),
-            "setfcap" => Ok(Setfcap),
-            "setgid" => Ok(Setgid),
-            "setpcap" => Ok(Setpcap),
-            "setuid" => Ok(Setuid),
-            "sys_admin" => Ok(SysAdmin),
-            "sys_boot" => Ok(SysBoot),
-            "sys_chroot" => Ok(SysChroot),
-            "sys_module" => Ok(SysModule),
-            "sys_nice" => Ok(SysNice),
-            "sys_pacct" => Ok(SysPacct),
-            "sys_ptrace" => Ok(SysPtrace),
-            "sys_rawio" => Ok(SysRawio),
-            "sys_resource" => Ok(SysResource),
-            "sys_time" => Ok(SysTime),
-            "sys_tty_config" => Ok(SysTtyConfig),
-            "syslog" => Ok(Syslog),
-            "wake_alarm" => Ok(WakeAlarm),
-            _ => Err(Error::BadCap),
-        }
+values! {
+    /// Caps used by the various `caps` commands
+    #[derive(Copy, Clone, Debug, Eq, Hash, PartialEq)]
+    pub enum Capabilities {
+        AuditControl = "audit_control",
+        AuditRead = "audit_read",
+        AuditWrite = "audit_write",
+        BlockSuspend = "block_suspend",
+        Bpf = "bpf",
+        CheckpointRestore = "checkpoint_restore",
+        Chown = "chown",
+        DacOverride = "dac_override",
+        DacReadSearch = "dac_read_search",
+        Fowner = "fowner",
+        Fsetid = "fsetid",
+        IpcLock = "ipc_lock",
+        IpcOwner = "ipc_owner",
+        Kill = "kill",
+        Lease = "lease",
+        LinuxImmutable = "linux_immutable",
+        MacAdmin = "mac_admin",
+        MacOverride = "mac_override",
+        Mknod = "mknod",
+        NetAdmin = "net_admin",
+        NetBindService = "net_bind_service",
+        NetBroadcast = "net_broadcast",
+        NetRaw = "net_raw",
+        Perfmon = "perfmon",
+        Setfcap = "setfcap",
+        Setgid = "setgid",
+        Setpcap = "setpcap",
+        Setuid = "setuid",
+        SysAdmin = "sys_admin",
+        SysBoot = "sys_boot",
+        SysChroot = "sys_chroot",
+        SysModule = "sys_module",
+        SysNice = "sys_nice",
+        SysPacct = "sys_pacct",
+        SysPtrace = "sys_ptrace",
+        SysRawio = "sys_rawio",
+        SysResource = "sys_resource",
+        SysTime = "sys_time",
+        SysTtyConfig = "sys_tty_config",
+        Syslog = "syslog",
+        WakeAlarm = "wake_alarm",
+        _ = Error::BadCap,
     }
 }
 
@@ -811,18 +754,13 @@ impl FromStr for Capabilities {
 // DBusPolicy
 //
 
-/// DBus Policy
-#[derive(Copy, Clone, Debug, Eq, Hash, PartialEq)]
-pub enum DBusPolicy {
-    Filter,
-    None,
-}
-impl fmt::Display for DBusPolicy {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            Self::Filter => write!(f, "filter"),
-            Self::None => write!(f, "none"),
-        }
+values! {
+    /// DBus Policy
+    #[derive(Copy, Clone, Debug, Eq, Hash, PartialEq)]
+    pub enum DBusPolicy {
+        Filter = "filter",
+        None = "none",
+        _ = Error::BadDBusPolicy,
     }
 }
 
@@ -830,45 +768,17 @@ impl fmt::Display for DBusPolicy {
 // Protocol
 //
 
-/// A `Protocol` from firejails `protocol` command
-#[derive(Copy, Clone, Debug, Hash, PartialEq, Eq, PartialOrd, Ord)]
-pub enum Protocol {
-    Unix,
-    Inet,
-    Inet6,
-    Netlink,
-    Packet,
-    Bluetooth,
-}
-impl FromStr for Protocol {
-    type Err = Error;
-
-    fn from_str(proto: &str) -> Result<Self, Self::Err> {
-        match proto {
-            "unix" => Ok(Self::Unix),
-            "inet" => Ok(Self::Inet),
-            "inet6" => Ok(Self::Inet6),
-            "netlink" => Ok(Self::Netlink),
-            "packet" => Ok(Self::Packet),
-            "bluetooth" => Ok(Self::Bluetooth),
-            _ => Err(Error::BadProtocol),
-        }
-    }
-}
-impl fmt::Display for Protocol {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(
-            f,
-            "{}",
-            match self {
-                Self::Unix => "unix",
-                Self::Inet => "inet",
-                Self::Inet6 => "inet6",
-                Self::Netlink => "netlink",
-                Self::Packet => "packet",
-                Self::Bluetooth => "bluetooth",
-            },
-        )
+values! {
+    /// A `Protocol` from firejails `protocol` command
+    #[derive(Copy, Clone, Debug, Hash, PartialEq, Eq, PartialOrd, Ord)]
+    pub enum Protocol {
+        Unix = "unix",
+        Inet = "inet",
+        Inet6 = "inet6",
+        Netlink = "netlink",
+        Packet = "packet",
+        Bluetooth = "bluetooth",
+        _ = Error::BadProtocol,
     }
 }
 
@@ -938,6 +848,8 @@ pub enum Error {
     BadCommand,
     #[error("Invalid condition")]
     BadCondition,
+    #[error("Invalid dbus policy")]
+    BadDBusPolicy,
     #[error("Invalid env command")]
     BadEnv,
     #[error("Invalid protocol")]

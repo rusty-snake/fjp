@@ -1,4 +1,4 @@
-# Copyright © 2020 rusty-snake
+# Copyright © 2020,2021 rusty-snake
 #
 # This file is part of firejail-profile
 #
@@ -134,6 +134,25 @@ subcommands:
             help: The name of the program to look for a profile.
   - list:
       about: List all user profile
+      args:
+        - incs:
+            long: incs
+            conflicts_with:
+              - locals
+              - profiles
+            help: List only .inc
+        - locals:
+            long: locals
+            conflicts_with:
+              - incs
+              - profiles
+            help: List only .local
+        - profiles:
+            long: profiles
+            conflicts_with:
+              - incs
+              - locals
+            help: List only .profile
   - rm:
       about: Remove profiles
       args:

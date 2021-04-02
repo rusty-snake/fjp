@@ -5,13 +5,12 @@
  + user editable shortcuts
  + aliases like git or cargo
  + rethink the syntax for profile::Profile::complete_name
- + Rewrite the manpage using roff (https://www.cyberciti.biz/faq/linux-unix-creating-a-manpage/)
 
 edit
 ----
 
  - warn/reject `edit abc.local` if no `include abc.local` in `abc.profile`
- - shortcuts (globals, pre-globals, post-globals)
+ - open local instead
 
 cat
 ---
@@ -26,7 +25,6 @@ grep
 ----
 
 Like `git grep`, a grep for /etc/firejail/* and ~/.config/firejail/*.
-
 
 sed
 ---
@@ -62,11 +60,6 @@ cp
 
 list
 ----
-
- - `--profile`, `--inc`, `--local` show only thoses files
-
-generate-standalone
--------------------
 
 build
 -----

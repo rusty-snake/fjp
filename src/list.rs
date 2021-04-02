@@ -1,5 +1,5 @@
 /*
- * Copyright © 2020 rusty-snake
+ * Copyright © 2020,2021 rusty-snake
  *
  * This file is part of fjp
  *
@@ -18,12 +18,42 @@
  */
 
 use crate::{fatal, USER_PROFILE_DIR};
+use bitflags::bitflags;
 use clap::ArgMatches;
 use log::{debug, warn};
+use std::ffi::OsStr;
 use std::fs::read_dir;
+use std::path::Path;
 
-pub fn start(_cli: &ArgMatches<'_>) {
+bitflags! {
+    struct Flags: u8 {
+        const INCS     = 0b_0000_0001;
+        const LOCALS   = 0b_0000_0010;
+        const PROFILES = 0b_0000_0100;
+    }
+}
+impl Flags {
+    fn from_cli_args(cli: &ArgMatches<'_>) -> Self {
+        macro_rules! insert_flag {
+            ($flag:path, in $flags:ident if $cond:expr) => {
+                if $cond {
+                    $flags.insert($flag);
+                }
+            };
+        }
+
+        let mut flags = Self::empty();
+        insert_flag!(Self::INCS, in flags if cli.is_present("incs"));
+        insert_flag!(Self::LOCALS, in flags if cli.is_present("locals"));
+        insert_flag!(Self::PROFILES, in flags if cli.is_present("profiles"));
+        flags
+    }
+}
+
+pub fn start(cli: &ArgMatches<'_>) {
     debug!("subcommand: list");
+
+    let flags = Flags::from_cli_args(cli);
 
     let mut user_profiles = read_dir(&*USER_PROFILE_DIR)
         .unwrap_or_else(|err| fatal!("Failed to open the user profile directory: {}", err))
@@ -36,6 +66,17 @@ pub fn start(_cli: &ArgMatches<'_>) {
         })
         .filter(|direntry| direntry.file_type().unwrap().is_file())
         .map(|file| file.file_name())
+        .filter(|file| {
+            flags.contains(Flags::INCS) && Path::new(file).extension() == Some(OsStr::new(".inc"))
+        })
+        .filter(|file| {
+            flags.contains(Flags::LOCALS)
+                && Path::new(file).extension() == Some(OsStr::new(".local"))
+        })
+        .filter(|file| {
+            flags.contains(Flags::PROFILES)
+                && Path::new(file).extension() == Some(OsStr::new(".profile"))
+        })
         .collect::<Vec<_>>();
     user_profiles.sort_unstable();
     print!(

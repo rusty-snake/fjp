@@ -51,7 +51,7 @@ lazy_static! {
         ("dp", "disable-programs.inc"),
         ("dpm", "disable-passwdmgr.inc"),
         ("ds", "disable-shell"),
-        ("dx", "disbale-xdg.inc"),
+        ("dx", "disable-xdg.inc"),
         ("wc", "whitelist-common.inc"),
         ("wruc", "whitelist-runuser-common.inc"),
         ("wusc", "whitelist-usr-share-common.inc"),

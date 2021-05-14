@@ -317,6 +317,7 @@ pub enum Command {
     Nodvd,
     Noexec(String),
     Nogroups,
+    Noinput,
     Nonewprivs,
     Noroot,
     Nosound,
@@ -395,6 +396,7 @@ impl fmt::Display for Command {
             Nodvd => write!(f, "nodvd"),
             Noexec(path) => write!(f, "noexec {}", path),
             Nogroups => write!(f, "nogroups"),
+            Noinput => write!(f, "noinput"),
             Nonewprivs => write!(f, "nonewprivs"),
             Noroot => write!(f, "noroot"),
             Nosound => write!(f, "nosound"),
@@ -519,6 +521,8 @@ impl FromStr for Command {
             Noexec(path.to_string())
         } else if line == "nogroups" {
             Nogroups
+        } else if line == "noinput" {
+            Noinput
         } else if line == "nonewprivs" {
             Nonewprivs
         } else if line == "noroot" {

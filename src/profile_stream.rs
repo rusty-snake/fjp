@@ -819,6 +819,7 @@ macro_rules! seccomp_error_action {
     };
 }
 #[rustfmt::skip]
+#[allow(clippy::upper_case_acronyms)]
 seccomp_error_action! {
     // gcc -dM -E /usr/include/errno.h | grep -E "^#define E" | cut -d" " -f2 | sort | tr '\n' ',' | sed "s/,/, /g"
     E2BIG, EACCES, EADDRINUSE, EADDRNOTAVAIL, EADV, EAFNOSUPPORT, EAGAIN, EALREADY, EBADE, EBADF,

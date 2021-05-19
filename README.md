@@ -4,7 +4,7 @@ fjp – firejail-profile
 [![](https://github.com/rusty-snake/fjp/workflows/Rust%20CI/badge.svg)](https://github.com/rusty-snake/fjp/actions?query=workflow%3A%22Rust+CI%22+event%3Apush+branch%3Amaster)
 ![](https://img.shields.io/badge/MSRV-1.45-blue.svg?logo=rust)
 [![](https://img.shields.io/static/v1?label=license&message=GPL-3.0-or-later&color=darkred&logo=gnu)](COPYING)
-[![maintenance-status: actively-developed (as of 2021-03-22)](https://img.shields.io/badge/maintenance--status-actively--developed_%28as_of_2021--03--22%29-brightgreen)](https://gist.github.com/rusty-snake/574a91f1df9f97ec77ca308d6d731e29)
+[![maintenance-status: actively-developed (as of 2021-05-19)](https://img.shields.io/badge/maintenance--status-actively--developed_%28as_of_2021--04--19%29-brightgreen)](https://gist.github.com/rusty-snake/574a91f1df9f97ec77ca308d6d731e29)
 
 A handy command line program to work fast and straightforward with firejail profiles.
 
@@ -34,6 +34,9 @@ Read https://rusty-snake.github.io/fjp/#download for more detailed information.
 | Fedora | `sudo dnf install cargo meson` |
 | Other | `curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs > rustup-init.sh`<br>`bash rustup-init.sh --no-modify-path --profile minimal`<br>`pip3 install --user meson` |
 
+`rst2html5` and `rst2man` (provided by [docutils](https://pypi.org/project/docutils/))
+are required if you want to build the manpage.
+
 2. Clone this repo
 
 ```
@@ -45,6 +48,7 @@ $ cd fjp
 
 ```
 $ meson setup --buildtype=release _builddir
+$ meson configure _builddir -Dmanpage=true  # Optional
 $ meson compile -C _builddir
 $ sudo meson install --no-rebuild -C _builddir
 ```

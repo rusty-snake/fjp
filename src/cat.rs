@@ -161,14 +161,7 @@ fn show_locals<W: io::Write>(locals: &[String], _opts: &Options, output: &mut W)
             name != "globals.local" && name != "pre-globals.local" && name != "post-globals.local"
         })
         .filter_map(|name| {
-            let profile_flags = ProfileFlags::default().with(ProfileFlags::READ);
-            match Profile::new(name, profile_flags) {
-                Ok(profile) => Some(profile),
-                Err(err) => {
-                    warn!("Couldn't Read locals. {}", err);
-                    None
-                }
-            }
+            Profile::new(name, ProfileFlags::default().with(ProfileFlags::READ)).ok()
         })
         .for_each(|profile| {
             if let Some(content) = profile.raw_data() {

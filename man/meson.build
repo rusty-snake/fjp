@@ -1,28 +1,39 @@
-rst2man = find_program('rst2man')
-gzip = find_program('gzip')
-
-configure_file(
+fjp1rst = configure_file(
   input: 'fjp.1.rst.in',
-  output: '@BASENAME@',
+  output: 'fjp.1.rst',
   configuration: {
     'VERSION': meson.project_version(),
   },
 )
 
-custom_target(
-  'manpage (rst2man)',
-  input: meson.current_build_dir() / 'fjp.1.rst',
-  output: 'fjp.1',
-  command: [rst2man, '@INPUT@', '@OUTPUT@'],
-  build_by_default: true,
-)
+make_manpage_sh = find_program(meson.source_root() / 'build-aux/manpage.sh')
 
 custom_target(
-  'manpage (gzip)',
-  input: meson.current_build_dir() / 'fjp.1',
-  output: 'fjp.1.gz',
-  command: [gzip, '--best', '--keep', '--force', '--no-name', '@INPUT@'],
+  'manpage',
   build_by_default: true,
   install: true,
   install_dir: get_option('mandir'),
+  input: fjp1rst,
+  output: 'fjp.1.gz',
+  command: [
+    make_manpage_sh,
+    'man',
+    '@INPUT@',
+    '@OUTPUT@',
+  ],
+)
+
+custom_target(
+  'manpage-html',
+  build_by_default: true,
+  install: true,
+  install_dir: get_option('datadir') / 'doc' / meson.project_name(),
+  input: fjp1rst,
+  output: 'fjp.1.html5',
+  command: [
+    make_manpage_sh,
+    'html',
+    '@INPUT@',
+    '@OUTPUT0@',
+  ],
 )

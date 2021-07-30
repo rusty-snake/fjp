@@ -373,7 +373,7 @@ pub enum Error {
     /// yourself, because the creation of this variant calls `.to_string()`
     /// on `raw_name` and `full_name`
     #[error("Failed to read '{full_name}': {source}")]
-    #[allow(clippy::enum-variant-names)]
+    #[allow(clippy::enum_variant_names)]
     ReadError {
         /// [`Profile::raw_name`]
         raw_name: String,

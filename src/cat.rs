@@ -72,7 +72,7 @@ pub fn start(cli: &ArgMatches<'_>) {
                 Box::new(io::stdout())
             };
             if let Some(content) = &p.raw_data() {
-                process(&p, &content, &opts, &mut output, 0);
+                process(&p, content, &opts, &mut output, 0);
             }
         }
         Err(e) => {
@@ -100,7 +100,7 @@ fn process<W: io::Write>(
     }
     depth += 1;
 
-    let [locals, profiles] = parse(&content);
+    let [locals, profiles] = parse(content);
 
     if opts.show_locals {
         if let Some(locals) = locals {
@@ -165,7 +165,7 @@ fn show_locals<W: io::Write>(locals: &[String], _opts: &Options, output: &mut W)
         })
         .for_each(|profile| {
             if let Some(content) = profile.raw_data() {
-                show_file(&profile, &content, output);
+                show_file(&profile, content, output);
             }
         });
 }
@@ -176,7 +176,7 @@ fn show_profiles<W: io::Write>(profiles: &[String], opts: &Options, output: &mut
         match Profile::new(name, profile_flags) {
             Ok(p) => {
                 if let Some(content) = p.raw_data() {
-                    process(&p, &content, opts, output, depth);
+                    process(&p, content, opts, output, depth);
                 }
             }
             Err(e) => {

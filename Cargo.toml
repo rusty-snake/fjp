@@ -23,7 +23,7 @@ bitflags = "1.2"
 lazy_static = "1"
 libc = "0.2"
 log = "0.4"
-nix = "0.20"
+nix = "0.22"
 termcolor = "1.1"
 thiserror = "1.0"
 
@@ -32,7 +32,7 @@ version = "2"
 features = [ "yaml", "wrap_help" ]
 
 [dependencies.env_logger]
-version = "0.8"
+version = "0.9"
 default-features = false
 features = ["termcolor", "atty"]
 

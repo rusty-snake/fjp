@@ -365,6 +365,7 @@ fn lookup_profile(name: &str, flags: ProfileFlags) -> Option<PathBuf> {
 
 /// Profile Error
 #[derive(Debug, thiserror::Error)]
+#[allow(clippy::enum_variant_names)]
 pub enum Error {
     /// Occurs when calling [`new`](Profile::new) with [`ProfileFlags::READ`] and
     /// the internal call to [`read`](Profile::read) fails.
@@ -373,7 +374,6 @@ pub enum Error {
     /// yourself, because the creation of this variant calls `.to_string()`
     /// on `raw_name` and `full_name`
     #[error("Failed to read '{full_name}': {source}")]
-    #[allow(clippy::enum_variant_names)]
     ReadError {
         /// [`Profile::raw_name`]
         raw_name: String,

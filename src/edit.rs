@@ -101,7 +101,11 @@ fn prepare_tmp_edit(user_profile: &Path, system_profile: &Path, flags: Flags) {
 
 fn prepare_edit(user_profile: &Path, system_profile: &Path, flags: Flags) {
     let copy_system_profile2user_profile = || {
-        info!("Copying the profile.");
+        info!(
+            "Copy '{}' to '{}'.",
+            user_profile.to_string_lossy(),
+            system_profile.to_string_lossy()
+        );
         copy_file(&system_profile, &user_profile).unwrap_or_else(|err| {
             fatal!(
                 "Failed to copy '{}' to '{}': {}",

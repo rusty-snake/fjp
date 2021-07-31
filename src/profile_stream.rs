@@ -313,6 +313,7 @@ pub enum Command {
     Env(String, String),
     Hostname(String),
     Ignore(String),
+    /// TODO: Recusive `ProfileStream`s
     Include(String),
     IpcNamespace,
     JoinOrStart(String),
@@ -785,6 +786,8 @@ values! {
 
 values! {
     /// A `Protocol` from firejails `protocol` command
+    ///
+    /// TODO: Support prefixes: `-`, `+` and `=`.
     #[derive(Copy, Clone, Debug, Hash, PartialEq, Eq, PartialOrd, Ord)]
     pub enum Protocol {
         Unix = "unix",
@@ -831,6 +834,7 @@ macro_rules! seccomp_error_action {
     };
 }
 #[rustfmt::skip]
+// Creates `enum SeccompErrorAction`
 seccomp_error_action! {
     // gcc -dM -E /usr/include/errno.h | grep -E "^#define E" | cut -d" " -f2 | sort | tr '\n' ',' | sed "s/,/, /g"
     E2BIG, EACCES, EADDRINUSE, EADDRNOTAVAIL, EADV, EAFNOSUPPORT, EAGAIN, EALREADY, EBADE, EBADF,

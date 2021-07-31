@@ -47,18 +47,12 @@ impl ProfileStream {
     }
 
     /// Retruns a ProfileStream containing all invalid lines from self
-    pub fn get_errors(&self) -> Option<Self> {
-        let vec: Vec<_> = self
-            .inner
+    pub fn errors(&self) -> Self {
+        self.inner
             .iter()
             .filter(|line| !line.is_valid())
             .cloned()
-            .collect();
-        if vec.is_empty() {
-            None
-        } else {
-            Some(Self { inner: vec })
-        }
+            .collect()
     }
 
     /// Set all `lineno` in the `ProfileStream` to `None`
@@ -73,6 +67,11 @@ impl ProfileStream {
         for (i, l) in self.inner.iter_mut().enumerate() {
             l.lineno = Some(i);
         }
+    }
+
+    /// Returns `true` if the profile-stream contains no lines
+    pub fn is_empty(&self) -> bool {
+        self.inner.is_empty()
     }
 }
 impl ProfileStream {

@@ -108,7 +108,7 @@ fn process(
     flags: Flags,
 ) -> anyhow::Result<()> {
     writeln!(output, "## Begin {} ##", profile.full_name()).unwrap();
-    for line in profile.raw_data().unwrap().lines() {
+    for line in profile.raw_data().lines() {
         if let Some(other_profile) = line.strip_prefix("include ") {
             if (flags.contains(Flags::KEEP_INC) && line.ends_with(".inc"))
                 || (flags.contains(Flags::KEEP_LOCALS) && line.ends_with(".local"))

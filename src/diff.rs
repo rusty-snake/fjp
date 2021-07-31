@@ -51,12 +51,10 @@ fn read_and_parse<'a>(cli: &'a ArgMatches<'a>) -> [(Profile<'a>, ProfileStream);
 
     let profile1_stream = profile1
         .raw_data()
-        .unwrap()
         .parse::<ProfileStream>()
         .unwrap();
     let profile2_stream = profile2
         .raw_data()
-        .unwrap()
         .parse::<ProfileStream>()
         .unwrap();
 

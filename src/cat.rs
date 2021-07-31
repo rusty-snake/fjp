@@ -71,9 +71,7 @@ pub fn start(cli: &ArgMatches<'_>) {
             } else {
                 Box::new(io::stdout())
             };
-            if let Some(content) = &p.raw_data() {
-                process(&p, content, &opts, &mut output, 0);
-            }
+            process(&p, p.raw_data(), &opts, &mut output, 0);
         }
         Err(e) => {
             if let Some(ref child) = child {
@@ -164,9 +162,7 @@ fn show_locals<W: io::Write>(locals: &[String], _opts: &Options, output: &mut W)
             Profile::new(name, ProfileFlags::default().with(ProfileFlags::READ)).ok()
         })
         .for_each(|profile| {
-            if let Some(content) = profile.raw_data() {
-                show_file(&profile, content, output);
-            }
+            show_file(&profile, profile.raw_data(), output);
         });
 }
 
@@ -175,9 +171,7 @@ fn show_profiles<W: io::Write>(profiles: &[String], opts: &Options, output: &mut
         let profile_flags = ProfileFlags::default().with(ProfileFlags::READ);
         match Profile::new(name, profile_flags) {
             Ok(p) => {
-                if let Some(content) = p.raw_data() {
-                    process(&p, content, opts, output, depth);
-                }
+                process(&p, p.raw_data(), opts, output, depth);
             }
             Err(e) => {
                 error!("Couldn't Read profile. {}", e);

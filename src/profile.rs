@@ -236,8 +236,17 @@ impl<'a> Profile<'a> {
         self.path.as_deref()
     }
 
+    /// Get the raw_data of the profile.
+    ///
+    /// # Panics
+    ///
+    /// This function panics if `self.raw_data` is `None`.
+    pub fn raw_data(&self) -> &str {
+        self.raw_data.as_deref().expect("Called raw_data() on a profile without raw_data.")
+    }
+
     /// Get the raw_data of the profile (if exists).
-    pub fn raw_data(&self) -> Option<&str> {
+    pub fn try_raw_data(&self) -> Option<&str> {
         self.raw_data.as_deref()
     }
 

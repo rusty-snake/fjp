@@ -98,13 +98,13 @@ fn format_simple(
 ) {
     let profile1_unique = profile1_stream
         .iter()
-        .filter(|l| l.is_comment())
+        .filter(|l| !l.is_comment())
         .filter(|l| !profile2_stream.contains(&l.content))
         .cloned()
         .collect::<ProfileStream>();
     let profile2_unique = profile2_stream
         .iter()
-        .filter(|l| l.is_comment())
+        .filter(|l| !l.is_comment())
         .filter(|l| !profile1_stream.contains(&l.content))
         .cloned()
         .collect::<ProfileStream>();

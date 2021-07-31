@@ -43,9 +43,7 @@ impl ProfileStream {
 
     /// Check whether there are any invalid lines
     pub fn has_errors(&self) -> bool {
-        self.inner
-            .iter()
-            .any(|l| matches!(*l.content, Content::Invalid(_, _)))
+        self.inner.iter().any(|line| line.is_valid())
     }
 
     /// Retruns a ProfileStream containing all invalid lines from self
@@ -53,7 +51,7 @@ impl ProfileStream {
         let vec: Vec<_> = self
             .inner
             .iter()
-            .filter(|l| matches!(*l.content, Content::Invalid(_, _)))
+            .filter(|line| line.is_valid())
             .cloned()
             .collect();
         if vec.is_empty() {
@@ -220,6 +218,19 @@ pub struct Line {
     pub lineno: Option<usize>,
     /// The content of this line
     pub content: Arc<Content>,
+}
+impl Line {
+    /// Returns `true` if this line is valid or `false` otherwise.
+    ///
+    /// A line is valid if `content` is something else than [`Content::Invalid`].
+    pub fn is_valid(&self) -> bool {
+        !matches!(*self.content, Content::Invalid(_, _))
+    }
+
+    /// Returns `true` if this line is a comment or `false` otherwise.
+    pub fn is_comment(&self) -> bool {
+        matches!(*self.content, Content::Comment(_))
+    }
 }
 impl AsRef<Content> for Line {
     fn as_ref(&self) -> &Content {

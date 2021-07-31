@@ -19,7 +19,7 @@
 
 use crate::fatal;
 use crate::profile::{Profile, ProfileFlags};
-use crate::profile_stream::{Content, ProfileStream};
+use crate::profile_stream::ProfileStream;
 use crate::utils::ColoredText;
 use clap::ArgMatches;
 use termcolor::Color;
@@ -98,13 +98,13 @@ fn format_simple(
 ) {
     let profile1_unique = profile1_stream
         .iter()
-        .filter(|l| !matches!(*l.content, Content::Comment(_)))
+        .filter(|l| l.is_comment())
         .filter(|l| !profile2_stream.contains(&l.content))
         .cloned()
         .collect::<ProfileStream>();
     let profile2_unique = profile2_stream
         .iter()
-        .filter(|l| !matches!(*l.content, Content::Comment(_)))
+        .filter(|l| l.is_comment())
         .filter(|l| !profile1_stream.contains(&l.content))
         .cloned()
         .collect::<ProfileStream>();

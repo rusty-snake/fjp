@@ -43,7 +43,7 @@ impl ProfileStream {
 
     /// Check whether there are any invalid lines
     pub fn has_errors(&self) -> bool {
-        self.inner.iter().any(|line| line.is_valid())
+        self.inner.iter().any(|line| !line.is_valid())
     }
 
     /// Retruns a ProfileStream containing all invalid lines from self
@@ -51,7 +51,7 @@ impl ProfileStream {
         let vec: Vec<_> = self
             .inner
             .iter()
-            .filter(|line| line.is_valid())
+            .filter(|line| !line.is_valid())
             .cloned()
             .collect();
         if vec.is_empty() {

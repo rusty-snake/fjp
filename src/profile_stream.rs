@@ -352,6 +352,7 @@ pub enum Command {
     Quiet,
     ReadOnly(String),
     ReadWrite(String),
+    Rmenv(String),
     /// `Seccomp(None)`: `seccomp`<br>
     /// `Seccomp(Some(vec!["!chroot".to_string()]))`: `seccomp !chroot`
     Seccomp(Option<Vec<String>>),
@@ -431,6 +432,7 @@ impl fmt::Display for Command {
             Quiet => write!(f, "quiet"),
             ReadOnly(path) => write!(f, "read-only {}", path),
             ReadWrite(path) => write!(f, "read-write {}", path),
+            Rmenv(name) => write!(f, "rmenv {}", name),
             Seccomp(None) => write!(f, "seccomp"),
             Seccomp(Some(syscalls)) => write!(f, "seccomp {}", syscalls.join(",")),
             SeccompBlockSecondary => write!(f, "seccomp.block-secondary"),
@@ -587,6 +589,8 @@ impl FromStr for Command {
             ReadOnly(path.to_string())
         } else if let Some(path) = line.strip_prefix("read-write ") {
             ReadWrite(path.to_string())
+        } else if let Some(name) = line.strip_prefix("rmenv ") {
+            Rmenv(name.to_string())
         } else if line == "seccomp" {
             Seccomp(None)
         } else if let Some(syscalls) = line.strip_prefix("seccomp ") {

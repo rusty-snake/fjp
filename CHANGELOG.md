@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
  - Rewrite man-page in reStructuredText
+ - MSRV: 1.52.0
 
 ## [0.2.0] &ndash; 2021-02-07
 ### Added

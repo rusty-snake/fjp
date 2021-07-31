@@ -21,7 +21,7 @@
 
 #![allow(clippy::cognitive_complexity)]
 
-use crate::utils::{join, parse_kv};
+use crate::utils::join;
 use std::borrow::{Borrow, BorrowMut};
 use std::fmt;
 use std::iter::FromIterator;
@@ -462,8 +462,9 @@ impl FromStr for Command {
         } else if line == "apparmor" {
             Apparmor
         } else if let Some(paths) = line.strip_prefix("bind ") {
-            parse_kv(paths, ',')
-                .map(|(src, dst)| Bind(src, dst))
+            paths
+                .split_once(',')
+                .map(|(src, dst)| Bind(src.to_string(), dst.to_string()))
                 .ok_or(Error::BadBind)?
         } else if let Some(path) = line.strip_prefix("blacklist ") {
             Blacklist(path.to_string())
@@ -496,8 +497,9 @@ impl FromStr for Command {
         } else if line == "disable-mnt" {
             DisableMnt
         } else if let Some(name_and_value) = line.strip_prefix("env ") {
-            parse_kv(name_and_value, '=')
-                .map(|(name, value)| Env(name, value))
+            name_and_value
+                .split_once('=')
+                .map(|(name, value)| Env(name.to_string(), value.to_string()))
                 .ok_or(Error::BadEnv)?
         } else if let Some(hostname) = line.strip_prefix("hostname ") {
             Hostname(hostname.to_string())

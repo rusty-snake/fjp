@@ -49,14 +49,8 @@ fn read_and_parse<'a>(cli: &'a ArgMatches<'a>) -> [(Profile<'a>, ProfileStream);
     )
     .unwrap_or_else(|err| fatal!("Failed to read {}: {}", profile2_name, err));
 
-    let profile1_stream = profile1
-        .raw_data()
-        .parse::<ProfileStream>()
-        .unwrap();
-    let profile2_stream = profile2
-        .raw_data()
-        .parse::<ProfileStream>()
-        .unwrap();
+    let profile1_stream = profile1.raw_data().parse::<ProfileStream>().unwrap();
+    let profile2_stream = profile2.raw_data().parse::<ProfileStream>().unwrap();
 
     [(profile1, profile1_stream), (profile2, profile2_stream)]
 }

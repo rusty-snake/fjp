@@ -42,14 +42,14 @@ impl ProfileStream {
     }
 
     /// Check whether there are any invalid lines
-    pub fn has_errored(&self) -> bool {
+    pub fn has_errors(&self) -> bool {
         self.inner
             .iter()
             .any(|l| matches!(*l.content, Content::Invalid(_, _)))
     }
 
     /// Retruns a ProfileStream containing all invalid lines from self
-    pub fn errored(&self) -> Option<Self> {
+    pub fn get_errors(&self) -> Option<Self> {
         let vec: Vec<_> = self
             .inner
             .iter()

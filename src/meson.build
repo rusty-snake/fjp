@@ -1,10 +1,16 @@
-app_bin = meson.project_name()
+# vim: ft=meson sw=2 ts=2 sts=2 et ai
 
+fs = import('fs')
+
+cargo_target_dir = meson.project_build_root() / 'cargo-target-dir'
 sources = [
   '../build.rs',
   '../Cargo.lock',
   '../Cargo.toml',
+  '../macros/Cargo.toml',
+  '../macros/src/lib.rs',
   'cat.rs',
+  'cli.yaml',
   'diff.rs',
   'disable.rs',
   'edit.rs',
@@ -20,36 +26,46 @@ sources = [
   'utils.rs',
 ]
 
-outputs = [
-  app_bin,
-  app_bin + '.bash',
-  app_bin + '.fish',
-  app_bin + '.zsh',
+cargo = find_program('cargo', fs.expanduser('~/.cargo/bin/cargo'))
+
+cargo_build_cmd = [
+  cargo,
+  'build',
+  '--manifest-path=' + meson.project_source_root() + '/Cargo.toml',
 ]
 
-cargo_script = find_program(meson.source_root() / 'build-aux/cargo.sh')
-custom_target(
+if get_option('buildtype') == 'release'
+  cargo_build_cmd += ['--release', '--features=color-backtrace']
+endif
+
+cargo_build = custom_target(
   'cargo-build',
+  console: true,
   build_by_default: true,
   input: sources,
-  output: outputs,
-  console: true,
-  command: [
-    cargo_script,
-    meson.build_root(),
-    meson.source_root(),
-    meson.current_build_dir(),
-    get_option('buildtype'),
-    app_bin,
-  ]
+  output: [meson.project_name()],
+  env: {
+    'FJP_SHELLCOMP_DIR': meson.current_build_dir(),
+    'CARGO_TARGET_DIR': cargo_target_dir,
+  },
+  command: cargo_build_cmd,
 )
 
-install_script = find_program(meson.source_root() / 'build-aux/install.sh')
 meson.add_install_script(
-  install_script,
-  meson.current_build_dir(),
-  app_bin,
-  get_option('strip').to_string(),
-  get_option('bindir'),
-  get_option('datadir'),
+  '/usr/bin/env',
+    'CARGO_TARGET_DIR=' + cargo_target_dir,
+    'MESON_CURRENT_BUILD_DIR=' + meson.current_build_dir(),
+    'buildtype=' + get_option('buildtype'),
+    'bindir=' + get_option('bindir'),
+    'datadir=' + get_option('datadir'),
+  '/bin/sh',
+    '-e',
+    '-u',
+    '-c',
+    '''
+      install -Dm0755 "$CARGO_TARGET_DIR"/"$buildtype"/fjp "$MESON_INSTALL_DESTDIR_PREFIX$bindir"/fjp
+      install -Dm0644 "$MESON_CURRENT_BUILD_DIR"/fjp.bash "$MESON_INSTALL_DESTDIR_PREFIX$datadir"/bash-completion/completions/fjp
+      install -Dm0644 "$MESON_CURRENT_BUILD_DIR"/fjp.fish "$MESON_INSTALL_DESTDIR_PREFIX$datadir"/fish/completions/fjp.fish
+      install -Dm0644 "$MESON_CURRENT_BUILD_DIR"/fjp.zsh "$MESON_INSTALL_DESTDIR_PREFIX$datadir"/zsh/site-functions/_fjp
+    '''
 )

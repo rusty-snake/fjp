@@ -6,7 +6,7 @@ fjp1rst = configure_file(
   },
 )
 
-make_manpage_sh = find_program(meson.source_root() / 'build-aux/manpage.sh')
+make_manpage_sh = find_program(meson.project_source_root() / 'build-aux/manpage.sh')
 
 custom_target(
   'manpage',

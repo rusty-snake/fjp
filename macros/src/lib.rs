@@ -21,12 +21,8 @@ pub fn fjp_version(_: proc_macro::TokenStream) -> proc_macro::TokenStream {
             .args(&["rev-parse", "--short", "HEAD"])
             .output()
             .ok()
-            .map(|output| {
-                String::from_utf8_lossy(&output.stdout)
-                    .into_owned()
-                    .trim()
-                    .to_string()
-            })
+            .and_then(|output| String::from_utf8(output.stdout).ok())
+            .map(|commit| commit.trim().to_string())
     }
 
     fn is_dirty() -> bool {

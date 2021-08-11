@@ -57,7 +57,7 @@ impl ProfileStream {
 
     /// Set all `lineno` in the `ProfileStream` to `None`
     pub fn strip_lineno(&mut self) {
-        for l in self.inner.iter_mut() {
+        for l in &mut self.inner {
             l.lineno = None;
         }
     }

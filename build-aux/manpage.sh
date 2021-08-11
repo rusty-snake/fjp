@@ -10,7 +10,7 @@ if [[ "$1" == man ]]; then
 		echo "Could not find rst2man."
 		exit 1
 	fi
-	rst2man "$INPUT_FILE" | gzip --best --keep --force --no-name > "$OUTPUT_FILE"
+	rst2man "$INPUT_FILE" | gzip -9 > "$OUTPUT_FILE"
 elif [[ "$1" == html ]]; then
 	if ! command -v rst2html5 >&-; then
 		echo "Could not find rst2html5."

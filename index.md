@@ -99,30 +99,52 @@ Download
 --------
 
 You can download a tar.xz archive with a statically linked 64-bit musl binary
-from <https://github.com/rusty-snake/fjp/releases>. All you need to do then is
-to save the binary in a directory in `$PATH`. In addition you can add one of the
-provided shell-completions-script to your preffered shell.
+from <https://github.com/rusty-snake/fjp/releases/tag/v{{ site.fjp_version }}>.
+All you need to do then is to save the binary in a directory in `$PATH`. In
+addition you can add one of the provided shell-completions-script to your
+preffered shell.
 
-### Install now
+To make the installation easier you can execute one of the commands below to
+install fjp.
 
-#### System
-
-```
-wget -qO- "https://github.com/rusty-snake/fjp/releases/download/v0.2.0/fjp-v0.2.0-x86_64-unknown-linux-musl.tar.xz" | sudo tar -xJf- -C /usr/local
-```
-
-#### User
+**System**
 
 ```
-wget -qO- "https://github.com/rusty-snake/fjp/releases/download/v0.2.0/fjp-v0.2.0-x86_64-unknown-linux-musl.tar.xz" | tar -xJf- -C ~/.local
+wget -qO- "https://github.com/rusty-snake/fjp/releases/download/v{{ site.fjp_version }}/fjp-v{{ site.fjp_version }}-x86_64-unknown-linux-musl.tar.xz" | sudo tar -xJf- -C /usr/local
 ```
+
+**User**
+
+```
+wget -qO- "https://github.com/rusty-snake/fjp/releases/download/v{{ site.fjp_version }}/fjp-v{{ site.fjp_version }}-x86_64-unknown-linux-musl.tar.xz" | tar -xJf- -C ~/.local
+```
+
+{% if site.fjp_rc_version %}
+
+### Download the latest release candidate
+
+Alternatively you can install and test the latest release candidate from
+<https://github.com/rusty-snake/fjp/releases/tag/v{{ site.fjp_rc_version }}>.
+
+**System**
+
+```
+wget -qO- "https://github.com/rusty-snake/fjp/releases/download/v{{ site.fjp_rc_version }}/fjp-v{{ site.fjp_rc_version }}-x86_64-unknown-linux-musl.tar.xz" | sudo tar -xJf- -C /usr/local
+```
+
+**User**
+
+```
+wget -qO- "https://github.com/rusty-snake/fjp/releases/download/v{{ site.fjp_rc_version }}/fjp-v{{ site.fjp_rc_version }}-x86_64-unknown-linux-musl.tar.xz" | tar -xJf- -C ~/.local
+```
+{% endif %}
 
 <div style="margin: 1cm;"></div>
 
 Changelog
 ---------
 
-The current stable release is `0.2.0`.
+The current stable release is `{{ site.fjp_version }}`.
 
 ### Added
 - CI using GitHub Actions

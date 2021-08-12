@@ -5,3 +5,5 @@ description: >-
 theme: jekyll-theme-modernist
 plugins:
   - jekyll-feed
+fjp_version: 0.2.0
+fjp_rc_version: 0.3.0-rc3

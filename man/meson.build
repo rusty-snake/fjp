@@ -12,7 +12,7 @@ custom_target(
   'manpage',
   build_by_default: true,
   install: true,
-  install_dir: get_option('mandir'),
+  install_dir: get_option('mandir') / 'man1',
   input: fjp1rst,
   output: 'fjp.1.gz',
   command: [

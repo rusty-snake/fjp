@@ -3,7 +3,7 @@ project('fjp',
           version: '0.3.0-rc2',
           license: 'GPL-3.0-or-later',
     meson_version: '>= 0.57.0',
-  default_options: [ 'strip=true' ]
+  default_options: [ 'strip=true' ],
 )
 
 subdir('src')
@@ -13,10 +13,10 @@ if get_option('manpage')
 endif
 
 install_data(
-  ['AUTHORS', 'CHANGELOG.md', 'README.md', 'TODO.md'],
+  ['CHANGELOG.md', 'README.md'],
   install_dir: get_option('datadir') / 'doc' / meson.project_name()
 )
 install_data(
-  'COPYING',
+  ['AUTHORS', 'COPYING'],
   install_dir: get_option('datadir') / 'licenses' / meson.project_name()
 )

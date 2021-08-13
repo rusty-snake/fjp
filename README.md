@@ -34,8 +34,7 @@ Read https://rusty-snake.github.io/fjp/#download for more detailed information.
 | Fedora | `sudo dnf install cargo meson` |
 | Other | `curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs > rustup-init.sh`<br>`bash rustup-init.sh --no-modify-path --profile minimal`<br>`pip3 install --user meson` |
 
-`rst2html5` and `rst2man` (provided by [docutils](https://pypi.org/project/docutils/))
-are required if you want to build the manpage.
+[docutils](https://pypi.org/project/docutils/) and [Pygments](https://pypi.org/project/Pygments/) are required too if you want to build the manpage.
 
 2. Clone this repo
 

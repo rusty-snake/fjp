@@ -56,16 +56,16 @@ meson.add_install_script(
     'CARGO_TARGET_DIR=' + cargo_target_dir,
     'MESON_CURRENT_BUILD_DIR=' + meson.current_build_dir(),
     'buildtype=' + get_option('buildtype'),
-    'bindir=' + get_option('bindir'),
-    'datadir=' + get_option('datadir'),
+    'bindir=' + get_option('prefix') / get_option('bindir'),
+    'datadir=' + get_option('prefix') / get_option('datadir'),
   '/bin/sh',
     '-e',
     '-u',
     '-c',
     '''
-      install -Dm0755 "$CARGO_TARGET_DIR"/"$buildtype"/fjp "$MESON_INSTALL_DESTDIR_PREFIX$bindir"/fjp
-      install -Dm0644 "$MESON_CURRENT_BUILD_DIR"/fjp.bash "$MESON_INSTALL_DESTDIR_PREFIX$datadir"/bash-completion/completions/fjp
-      install -Dm0644 "$MESON_CURRENT_BUILD_DIR"/fjp.fish "$MESON_INSTALL_DESTDIR_PREFIX$datadir"/fish/completions/fjp.fish
-      install -Dm0644 "$MESON_CURRENT_BUILD_DIR"/fjp.zsh "$MESON_INSTALL_DESTDIR_PREFIX$datadir"/zsh/site-functions/_fjp
+      install -Dm0755 "$CARGO_TARGET_DIR"/"$buildtype"/fjp "$DESTDIR$bindir"/fjp
+      install -Dm0644 "$MESON_CURRENT_BUILD_DIR"/fjp.bash "$DESTDIR$datadir"/bash-completion/completions/fjp
+      install -Dm0644 "$MESON_CURRENT_BUILD_DIR"/fjp.fish "$DESTDIR$datadir"/fish/completions/fjp.fish
+      install -Dm0644 "$MESON_CURRENT_BUILD_DIR"/fjp.zsh "$DESTDIR$datadir"/zsh/site-functions/_fjp
     '''
 )

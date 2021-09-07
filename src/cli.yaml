@@ -110,7 +110,7 @@ subcommands:
       about: Copy the profile and all its includes into one file.
       args:
         - keep-inc:
-            long: keep-inc
+            long: keep-incs
             help: Keep all includes of .inc's
         - keep-locals:
             long: keep-locals

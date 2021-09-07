@@ -31,7 +31,7 @@ use std::io::{stdout, BufWriter, Write as IoWrite};
 
 bitflags! {
     struct Flags: u8 {
-        const KEEP_INC      = 0b_0000_0001;
+        const KEEP_INCS     = 0b_0000_0001;
         const KEEP_LOCALS   = 0b_0000_0010;
     }
 }
@@ -63,8 +63,8 @@ pub fn start(cli: &ArgMatches<'_>) {
     debug!("subcommand: generate-standalone");
 
     let mut flags = Flags::empty();
-    if cli.is_present("keep-inc") {
-        flags.insert(Flags::KEEP_INC);
+    if cli.is_present("keep-incs") {
+        flags.insert(Flags::KEEP_INCS);
     }
     if cli.is_present("keep-locals") {
         flags.insert(Flags::KEEP_LOCALS);
@@ -110,7 +110,7 @@ fn process(
     writeln!(output, "## Begin {} ##", profile.full_name()).unwrap();
     for line in profile.raw_data().lines() {
         if let Some(other_profile) = line.strip_prefix("include ") {
-            if (flags.contains(Flags::KEEP_INC) && line.ends_with(".inc"))
+            if (flags.contains(Flags::KEEP_INCS) && line.ends_with(".inc"))
                 || (flags.contains(Flags::KEEP_LOCALS) && line.ends_with(".local"))
             {
                 write_lined!(line, output);

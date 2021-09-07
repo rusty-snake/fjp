@@ -23,30 +23,36 @@ use clap::ArgMatches;
 use log::{debug, warn};
 use std::ffi::OsStr;
 use std::fs::read_dir;
+use std::io::{stdout, Write};
+use std::os::unix::ffi::OsStrExt;
 use std::path::Path;
 
 bitflags! {
     struct Flags: u8 {
-        const INCS     = 0b_0000_0001;
-        const LOCALS   = 0b_0000_0010;
-        const PROFILES = 0b_0000_0100;
+        const ONLY_INCS     = 0b_0000_0001;
+        const ONLY_LOCALS   = 0b_0000_0010;
+        const ONLY_PROFILES = 0b_0000_0100;
     }
 }
 impl Flags {
     fn from_cli_args(cli: &ArgMatches<'_>) -> Self {
-        macro_rules! insert_flag {
-            ($flag:path, in $flags:ident if $cond:expr) => {
-                if $cond {
-                    $flags.insert($flag);
-                }
+        macro_rules! flags_from_cli_args {
+            ( $( $flag:literal: $galf:ident $(,)? )* ) => {
+                let mut flags = Self::empty();
+                $(
+                    if cli.is_present($flag) {
+                        flags.insert(Self::$galf)
+                    }
+                )*
+                return flags;
             };
         }
 
-        let mut flags = Self::empty();
-        insert_flag!(Self::INCS, in flags if cli.is_present("incs"));
-        insert_flag!(Self::LOCALS, in flags if cli.is_present("locals"));
-        insert_flag!(Self::PROFILES, in flags if cli.is_present("profiles"));
-        flags
+        flags_from_cli_args! {
+            "incs": ONLY_INCS,
+            "locals": ONLY_LOCALS,
+            "profiles": ONLY_PROFILES,
+        }
     }
 }
 
@@ -67,26 +73,23 @@ pub fn start(cli: &ArgMatches<'_>) {
         .filter(|direntry| direntry.file_type().unwrap().is_file())
         .map(|file| file.file_name())
         .filter(|file| {
-            flags.contains(Flags::INCS) && Path::new(file).extension() == Some(OsStr::new(".inc"))
+            !flags.contains(Flags::ONLY_INCS)
+                || Path::new(file).extension() == Some(OsStr::new("inc"))
         })
         .filter(|file| {
-            flags.contains(Flags::LOCALS)
-                && Path::new(file).extension() == Some(OsStr::new(".local"))
+            !flags.contains(Flags::ONLY_LOCALS)
+                || Path::new(file).extension() == Some(OsStr::new("local"))
         })
         .filter(|file| {
-            flags.contains(Flags::PROFILES)
-                && Path::new(file).extension() == Some(OsStr::new(".profile"))
+            !flags.contains(Flags::ONLY_PROFILES)
+                || Path::new(file).extension() == Some(OsStr::new("profile"))
         })
         .collect::<Vec<_>>();
     user_profiles.sort_unstable();
-    print!(
-        "{}",
-        user_profiles
-            .into_iter()
-            .fold(String::new(), |mut acc, val| {
-                acc.push_str(val.to_str().unwrap());
-                acc.push('\n');
-                acc
-            })
-    );
+    let stdout = stdout();
+    let mut stdout = stdout.lock();
+    for user_profile in user_profiles {
+        stdout.write_all(user_profile.as_bytes()).unwrap();
+        stdout.write_all(b"\n").unwrap();
+    }
 }

@@ -46,18 +46,18 @@ pub fn start(cli: &ArgMatches<'_>) {
     } else if cli.is_present("list") {
         list().unwrap_or_else(|e| error!("An error occured while listing: {}", e));
     } else {
-        if !DISABLED_DIR.as_ref().exists() {
-            create_dir(DISABLED_DIR.as_ref())
-                .unwrap_or_else(|e| fatal!("Failed to create the disabled dir: {}", e));
+        match create_dir(&*DISABLED_DIR) {
+            Ok(()) => (),
+            Err(err) if err.kind() == std::io::ErrorKind::AlreadyExists => (),
+            Err(err) => fatal!("Failed to create the disabled dir: {}", err),
         }
         let profile_name = cli.value_of("PROFILE_NAME").unwrap();
-        disable_profile(
-            &Profile::new(
-                profile_name,
-                ProfileFlags::LOOKUP_USER | ProfileFlags::DENY_BY_PATH,
-            )
-            .unwrap(),
-        );
+        let profile = Profile::new(
+            profile_name,
+            ProfileFlags::LOOKUP_USER | ProfileFlags::DENY_BY_PATH,
+        )
+        .unwrap();
+        disable_profile(&profile);
     }
 }
 
@@ -81,20 +81,17 @@ fn list() -> IoResult<()> {
 }
 
 fn disable_profile(profile: &Profile<'_>) {
-    let enabled_profile;
-    if let Some(path) = profile.path() {
-        enabled_profile = path;
+    let enabled_profile = if let Some(path) = profile.path() {
+        path
     } else {
         error!(
             "Could not find '{}' in ~/.config/firejail",
             profile.full_name()
         );
         return;
-    }
-    debug!("enabled profile: {}", enabled_profile.to_string_lossy());
+    };
 
     let disabled_profile = DISABLED_DIR.get_profile_path(profile.full_name());
-    debug!("disabled profile: {}", disabled_profile.to_string_lossy());
 
     if disabled_profile.exists() {
         warn!("Profile '{}' is alread disabled.", profile.full_name());
@@ -104,5 +101,6 @@ fn disable_profile(profile: &Profile<'_>) {
         }
     }
 
+    debug!("Move '{}' to '{}'", enabled_profile.display(), disabled_profile.display());
     rename(&enabled_profile, &disabled_profile).unwrap_or_else(|e| error!("Rename failed: {}", e));
 }

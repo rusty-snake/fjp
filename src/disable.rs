@@ -101,6 +101,10 @@ fn disable_profile(profile: &Profile<'_>) {
         }
     }
 
-    debug!("Move '{}' to '{}'", enabled_profile.display(), disabled_profile.display());
+    debug!(
+        "Move '{}' to '{}'",
+        enabled_profile.display(),
+        disabled_profile.display()
+    );
     rename(&enabled_profile, &disabled_profile).unwrap_or_else(|e| error!("Rename failed: {}", e));
 }

@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - Rewrite man-page in reStructuredText
  - MSRV: 1.52.0
  - generate-standalones: rename --keep-inc to --keep-incs (for consistent naming)
+ - updated shortnames
 
 ## [0.2.0] &ndash; 2021-02-07
 ### Added

@@ -260,6 +260,21 @@ impl<'a> Profile<'a> {
         self.raw_data.as_deref()
     }
 
+    /// Converts a `Profile` into a `PathBuf`
+    ///
+    /// # Panics
+    ///
+    /// Panics if `self.path` is `None`.
+    pub fn into_pathbuf(self) -> PathBuf {
+        self.path
+            .expect("Called into_pathbuf() on a profile without a path.")
+    }
+
+    /// Converts a `Profile` into a `PathBuf` if possible.
+    pub fn try_into_pathbuf(self) -> Option<PathBuf> {
+        self.path
+    }
+
     /// Read the data of the profile
     ///
     /// This will re-read it if it is already read.

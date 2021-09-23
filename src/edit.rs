@@ -24,7 +24,7 @@ use crate::profile::{Profile, ProfileFlags};
 use crate::utils::input;
 use bitflags::bitflags;
 use clap::ArgMatches;
-use log::{debug, info, warn};
+use log::{debug, warn};
 use std::env::var_os;
 use std::ffi::OsString;
 use std::fs::{copy as copy_file, remove_file, rename};
@@ -56,61 +56,75 @@ pub fn start(cli: &ArgMatches<'_>) {
         profile_name,
         ProfileFlags::LOOKUP_USER | ProfileFlags::DENY_BY_PATH | ProfileFlags::ASSUME_EXISTENCE,
     )
-    .unwrap();
-
-    debug!("user profile: {}", user_profile.full_name());
+    .unwrap()
+    .into_pathbuf();
 
     let system_profile = Profile::new(
         profile_name,
         ProfileFlags::LOOKUP_SYSTEM | ProfileFlags::DENY_BY_PATH | ProfileFlags::ASSUME_EXISTENCE,
     )
-    .unwrap();
+    .unwrap()
+    .into_pathbuf();
 
-    debug!("system profile: {}", system_profile.full_name());
-
-    if let (Some(user_path), Some(system_path)) = (user_profile.path(), system_profile.path()) {
-        if flags.contains(Flags::TMP) {
-            prepare_tmp_edit(user_path, system_path, flags);
-        } else {
-            prepare_edit(user_path, system_path, flags);
-        }
+    if flags.contains(Flags::TMP) {
+        prepare_tmp_edit(&user_profile, &system_profile, flags);
+    } else {
+        prepare_edit(&user_profile, &system_profile, flags);
     }
 }
 
 fn prepare_tmp_edit(user_profile: &Path, system_profile: &Path, flags: Flags) {
-    let backup_profile = user_profile.with_extension("bak");
-
     if user_profile.exists() {
-        info!("Profile already exists, creating a backup.");
-        copy_file(user_profile, &backup_profile)
-            .unwrap_or_else(|err| fatal!("backup creation failed: {}", err));
+        let backup_profile = user_profile.with_extension("bak");
+
+        debug!(
+            "Copy '{}' to '{}'.",
+            user_profile.display(),
+            backup_profile.display()
+        );
+        copy_file(user_profile, &backup_profile).unwrap_or_else(|err| {
+            fatal!(
+                "Failed to create backup of {}: {}",
+                user_profile.file_name().unwrap().to_string_lossy(),
+                err
+            )
+        });
 
         prepare_edit(user_profile, system_profile, flags);
 
-        info!("Restoring the backup.");
-        rename(&backup_profile, user_profile)
-            .unwrap_or_else(|err| fatal!("failed to restore the profile: {}", err));
+        debug!(
+            "Move '{}' back to '{}'.",
+            backup_profile.display(),
+            user_profile.display()
+        );
+        rename(&backup_profile, user_profile).unwrap_or_else(|err| {
+            fatal!(
+                "Failed to restore {}: {}",
+                user_profile.file_name().unwrap().to_string_lossy(),
+                err
+            )
+        });
     } else {
         prepare_edit(user_profile, system_profile, flags);
 
-        info!("Removing the temporary profile.");
+        debug!("Remove '{}'.", user_profile.display());
         remove_file(user_profile)
-            .unwrap_or_else(|err| fatal!("failed to remove the temporary profile: {}", err));
+            .unwrap_or_else(|err| fatal!("Failed to remove '{}': {}", user_profile.display(), err));
     }
 }
 
 fn prepare_edit(user_profile: &Path, system_profile: &Path, flags: Flags) {
-    let copy_system_profile2user_profile = || {
-        info!(
+    let copy_system_profile_to_user_profile = || {
+        debug!(
             "Copy '{}' to '{}'.",
-            user_profile.to_string_lossy(),
-            system_profile.to_string_lossy()
+            system_profile.display(),
+            user_profile.display(),
         );
         copy_file(&system_profile, &user_profile).unwrap_or_else(|err| {
             fatal!(
                 "Failed to copy '{}' to '{}': {}",
-                system_profile.to_string_lossy(),
-                user_profile.to_string_lossy(),
+                system_profile.display(),
+                user_profile.display(),
                 err
             )
         });
@@ -118,14 +132,14 @@ fn prepare_edit(user_profile: &Path, system_profile: &Path, flags: Flags) {
 
     if system_profile.exists() && (flags.contains(Flags::TMP) || !user_profile.exists()) {
         if flags.contains(Flags::COPY) {
-            copy_system_profile2user_profile();
+            copy_system_profile_to_user_profile();
         } else {
             match input("Should the profile be copied? [(y)es/(n)o/(a)bort] ")
                 .unwrap()
                 .to_lowercase()
                 .as_str()
             {
-                "y" => copy_system_profile2user_profile(),
+                "y" => copy_system_profile_to_user_profile(),
                 "n" => (),
                 "a" => return,
                 _ => println!("Invalid answer, continue without copying."),
@@ -137,14 +151,20 @@ fn prepare_edit(user_profile: &Path, system_profile: &Path, flags: Flags) {
 }
 
 fn open_user_profile(profile: &Path) {
-    let editor = var_os("EDITOR").unwrap_or_else(|| OsString::from("vim"));
+    let editor = var_os("EDITOR").unwrap_or_else(|| {
+        warn!("$EDITOR not set or empty, using \"vim\" as fallback.");
+        OsString::from("vim")
+    });
 
-    debug!("open editor with: {}", profile.to_string_lossy());
-    let mut child = Command::new(&editor)
+    debug!(
+        "Open '{}' with {}.",
+        profile.display(),
+        editor.to_string_lossy()
+    );
+    let exit_code = Command::new(&editor)
         .arg(profile)
-        .spawn()
-        .unwrap_or_else(|e| fatal!("Could not start {}: {}", editor.to_string_lossy(), e));
-    let exit_code = child.wait().unwrap();
+        .status()
+        .unwrap_or_else(|err| fatal!("Failed to start {}: {}", editor.to_string_lossy(), err));
     if !exit_code.success() {
         warn!(
             "{} exited with exit code {}",

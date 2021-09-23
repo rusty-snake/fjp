@@ -36,27 +36,35 @@ use std::path::{Path, PathBuf};
 lazy_static! {
     /// `lazy_static`: HashMap with the shortnames used by [`complete_name`]
     static ref SHORTNAMES: HashMap<&'static str, &'static str> = [
+        ("abs", "allow-bin-sh.inc"),
         ("acd", "allow-common-devel.inc"),
         ("ag", "allow-gjs.inc"),
         ("aj", "allow-java.inc"),
         ("al", "allow-lua.inc"),
+        ("an", "allow-nodejs.inc"),
         ("ap", "allow-perl.inc"),
+        ("app", "allow-php.inc"),
         ("ap2", "allow-python2.inc"),
         ("ap3", "allow-python3.inc"),
         ("ar", "allow-ruby.inc"),
+        ("as", "allow-ssh.inc"),
         ("dc", "disable-common.inc"),
         ("dd", "disable-devel.inc"),
         ("de", "disable-exec.inc"),
         ("di", "disable-interpreters.inc"),
         ("dp", "disable-programs.inc"),
         ("dpm", "disable-passwdmgr.inc"),
-        ("ds", "disable-shell"),
+        ("ds", "disable-shell.inc"),
+        ("dwm", "disable-write-mnt.inc"),
+        ("dX", "disable-X11.inc"),
         ("dx", "disable-xdg.inc"),
         ("wc", "whitelist-common.inc"),
+        ("wrc", "whitelist-run-common.inc"),
         ("wruc", "whitelist-runuser-common.inc"),
         ("wusc", "whitelist-usr-share-common.inc"),
         ("wvc", "whitelist-var-common.inc"),
     ]
+    // TODO: Use .into_iter().collect() when we upgrade to rust 2021 edition
     .iter()
     .copied()
     .collect();

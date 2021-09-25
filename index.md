@@ -147,26 +147,12 @@ Changelog
 The current stable release is `{{ site.fjp_version }}`.
 
 ### Added
-- CI using GitHub Actions
-- MSRV: 1.45
-- new sub-commands: list, generate-standalone
-- new experimental sub-command: diff
-- add short options to disable, enable and edit
-- shortnames for profiles on supported sub-commands.  
-  (e.g. `wusc` expands to `whitelist-usr-share-common.inc`)
-- edit: If a profile is only found in the system-location ask if it should be copied.
+ - New flags for list: `--incs`, `--locals` and `--profiles`
 
 ### Changed
-- cat: no-globals in now default
-- edit \--tmp: consistent behavior: always start editing with the current profile.
-  Previously profiles were copied from /etc/firejail if they don't exists in ~/.config/firejail,
-  and renamed if the exists (now they will be copied inside ~/.config/firejail).
-- has: exit with 100 if no profile could we found.
-- Switch from self written make.sh to meson as build-system
-
-### Removed
-- edit: `--no-create` has been removed. If you don't want to create the profile,
-  just close your editor without saving.
-- edit: `--no-copy` has been removed. It is now interactive.
+ - Rewrite man-page in reStructuredText
+ - MSRV: 1.52.0
+ - generate-standalones: rename --keep-inc to --keep-incs (for consistent naming)
+ - updated shortnames
 
 For a full and up-to-date changelog see [CHANGELOG.md](https://github.com/rusty-snake/fjp/blob/master/CHANGELOG.md) on our GitHub repository.

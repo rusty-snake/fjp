@@ -101,7 +101,7 @@ Copy the profile and all its includes into one file.
 
   fjp generate-standalone [FLAGS] [OPTIONS] <PROFILE_NAME>
 
-``--keep-inc``
+``--keep-incs``
   Keep all includes of .inc's
 
 ``--keep-locals``

@@ -5,6 +5,7 @@
  + user editable shortcuts
  + aliases like git or cargo
  + rethink the syntax for profile::Profile::complete_name
+ + Path::to_string_lossy -> Path::display
 
 edit
 ----

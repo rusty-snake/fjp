@@ -16,7 +16,7 @@ Get started
 ### Install prebuild binary
 
 ```bash
-wget -qO- "https://github.com/rusty-snake/fjp/releases/download/v0.2.0/fjp-v0.2.0-x86_64-unknown-linux-musl.tar.xz" | tar -xJf- -C $HOME/.local
+wget -qO- "https://github.com/rusty-snake/fjp/releases/download/v0.3.0/fjp-v0.3.0-x86_64-unknown-linux-musl.tar.xz" | tar -xJf- -C $HOME/.local
 ```
 
 Read https://rusty-snake.github.io/fjp/#download for more detailed information.

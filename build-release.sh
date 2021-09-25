@@ -110,8 +110,8 @@ podman run --rm --security-opt=no-new-privileges --cap-drop=all \
 	"
 
 # Compute checksums
-(cd outdir; sha256sum *.tar.xz) > outdir/SHA256SUMS
-(cd outdir; sha512sum *.tar.xz) > outdir/SHA512SUMS
+(cd outdir; sha256sum ./*.tar.xz) > outdir/SHA256SUMS
+(cd outdir; sha512sum ./*.tar.xz) > outdir/SHA512SUMS
 
 if [[ -n "${MINISIGN:-}" ]] && command -v minisign >&-; then
 	minisign -S -s "$MINISIGN" -m outdir/*

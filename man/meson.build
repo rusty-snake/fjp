@@ -1,3 +1,6 @@
+rst2man = find_program('rst2man')
+rst2html5 = find_program('rst2html5')
+
 fjp1rst = configure_file(
   input: 'fjp.1.rst.in',
   output: 'fjp.1.rst',
@@ -6,18 +9,15 @@ fjp1rst = configure_file(
   },
 )
 
-make_manpage_sh = find_program(meson.project_source_root() / 'build-aux/manpage.sh')
-
 custom_target(
   'manpage',
   build_by_default: true,
   install: true,
   install_dir: get_option('mandir') / 'man1',
   input: fjp1rst,
-  output: 'fjp.1.gz',
+  output: 'fjp.1',
   command: [
-    make_manpage_sh,
-    'man',
+    rst2man,
     '@INPUT@',
     '@OUTPUT@',
   ],
@@ -27,13 +27,12 @@ custom_target(
   'manpage-html',
   build_by_default: true,
   install: true,
-  install_dir: get_option('datadir') / 'doc' / meson.project_name(),
+  install_dir: docdir,
   input: fjp1rst,
   output: 'fjp.1.html5',
   command: [
-    make_manpage_sh,
-    'html',
+    rst2html5,
     '@INPUT@',
-    '@OUTPUT0@',
+    '@OUTPUT@',
   ],
 )

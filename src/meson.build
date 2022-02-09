@@ -1,5 +1,3 @@
-# vim: ft=meson sw=2 ts=2 sts=2 et ai
-
 fs = import('fs')
 
 cargo_target_dir = meson.project_build_root() / 'cargo-target-dir'

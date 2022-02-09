@@ -6,6 +6,8 @@ project('fjp',
   default_options: [ 'strip=true' ],
 )
 
+docdir = get_option('datadir') / 'doc' / meson.project_name()
+
 subdir('src')
 
 if get_option('manpage')
@@ -13,10 +15,6 @@ if get_option('manpage')
 endif
 
 install_data(
-  ['CHANGELOG.md', 'README.md'],
-  install_dir: get_option('datadir') / 'doc' / meson.project_name()
-)
-install_data(
-  ['AUTHORS', 'COPYING'],
-  install_dir: get_option('datadir') / 'licenses' / meson.project_name()
+  'CHANGELOG.md', 'README.md', 'COPYING', 'AUTHORS',
+  install_dir: docdir
 )

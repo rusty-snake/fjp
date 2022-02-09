@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Copyright © 2020,2021 The fjp Authors
+# Copyright © 2020-2022 The fjp Authors
 #
 # This file is part of fjp
 #

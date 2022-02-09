@@ -22,12 +22,13 @@
 
 //! A commandline program to deal with firejail profiles.
 
-use clap::{crate_description, load_yaml, App};
+use clap::Parser;
 use env_logger::{Builder, Env};
 use lazy_static::lazy_static;
 use log::warn;
 use nix::unistd::getuid;
 
+mod cli;
 mod location;
 mod profile;
 mod profile_stream;
@@ -79,21 +80,15 @@ fn main() {
         warn!("fjp is designed to be used as regular user.");
     }
 
-    let yaml = load_yaml!("cli.yaml");
-    let matches = App::from_yaml(yaml)
-        .about(crate_description!())
-        .version(macros::fjp_version!())
-        .get_matches();
-    match matches.subcommand() {
-        ("cat", Some(sub_matches)) => start_cat(sub_matches),
-        ("diff", Some(sub_matches)) => start_diff(sub_matches),
-        ("disable", Some(sub_matches)) => start_disable(sub_matches),
-        ("edit", Some(sub_matches)) => start_edit(sub_matches),
-        ("enable", Some(sub_matches)) => start_enable(sub_matches),
-        ("generate-standalone", Some(sub_matches)) => start_generate_standalone(sub_matches),
-        ("has", Some(sub_matches)) => start_has(sub_matches),
-        ("list", Some(sub_matches)) => start_list(sub_matches),
-        ("rm", Some(sub_matches)) => start_rm(sub_matches),
-        _ => unreachable!(),
+    match &cli::Cli::parse().subcommand {
+        cli::Subcommands::Cat(cli) => start_cat(cli),
+        cli::Subcommands::Diff(cli) => start_diff(cli),
+        cli::Subcommands::Disable(cli) => start_disable(cli),
+        cli::Subcommands::Edit(cli) => start_edit(cli),
+        cli::Subcommands::Enable(cli) => start_enable(cli),
+        cli::Subcommands::GenerateStandalone(cli) => start_generate_standalone(cli),
+        cli::Subcommands::Has(cli) => start_has(cli),
+        cli::Subcommands::List(cli) => start_list(cli),
+        cli::Subcommands::Rm(cli) => start_rm(cli),
     }
 }

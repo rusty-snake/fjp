@@ -19,17 +19,14 @@
 
 use crate::profile::{Profile, ProfileFlags};
 use crate::utils::ColoredText;
-use clap::ArgMatches;
 use log::debug;
 use std::process::exit;
 use termcolor::Color;
 
-pub fn start(cli: &ArgMatches<'_>) {
+pub fn start(cli: &crate::cli::CliHas) {
     debug!("subcommand: has");
 
-    let profile_name = cli.value_of("PROFILE_NAME").unwrap();
-    let flags = ProfileFlags::default();
-    let profile = Profile::new(profile_name, flags).unwrap();
+    let profile = Profile::new(&cli.profile_name, ProfileFlags::default()).unwrap();
     if let Some(path) = profile.path() {
         println!(
             "Profile found for {} at {}",
@@ -38,7 +35,7 @@ pub fn start(cli: &ArgMatches<'_>) {
         );
         exit(0);
     } else {
-        println!("Could not find a Profile for {}.", profile_name);
+        println!("Could not find a Profile for {}.", &cli.profile_name);
         exit(100);
     }
 }

@@ -28,8 +28,8 @@ termcolor = "1.1"
 thiserror = "1.0"
 
 [dependencies.clap]
-version = "2"
-features = [ "yaml", "wrap_help" ]
+version = "3"
+features = [ "derive", "wrap_help" ]
 
 [dependencies.env_logger]
 version = "0.9"
@@ -44,4 +44,9 @@ optional = true
 path = "macros"
 
 [build-dependencies]
-clap = { version = "2", default-features = false, features = [ "yaml" ] }
+clap_complete = "3"
+
+[build-dependencies.clap]
+version = "3"
+default-features = false
+features = [ "derive" ]

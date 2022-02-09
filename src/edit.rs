@@ -23,7 +23,6 @@ use crate::fatal;
 use crate::profile::{Profile, ProfileFlags};
 use crate::utils::input;
 use bitflags::bitflags;
-use clap::ArgMatches;
 use log::{debug, warn};
 use std::env::var_os;
 use std::ffi::OsString;
@@ -39,28 +38,25 @@ bitflags! {
     }
 }
 
-pub fn start(cli: &ArgMatches<'_>) {
+pub fn start(cli: &crate::cli::CliEdit) {
     debug!("subcommand: edit");
 
     let mut flags = Flags::empty();
-    if cli.is_present("tmp") {
+    if cli.tmp {
         flags.insert(Flags::TMP | Flags::COPY);
     }
 
-    // NOTE: unwrap can't fail here, because PROFILE_NAME is required
-    let profile_name = cli.value_of("PROFILE_NAME").unwrap();
-
-    debug!("profile name: {}", profile_name);
+    debug!("profile name: {}", cli.profile_name);
 
     let user_profile = Profile::new(
-        profile_name,
+        &cli.profile_name,
         ProfileFlags::LOOKUP_USER | ProfileFlags::DENY_BY_PATH | ProfileFlags::ASSUME_EXISTENCE,
     )
     .unwrap()
     .into_pathbuf();
 
     let system_profile = Profile::new(
-        profile_name,
+        &cli.profile_name,
         ProfileFlags::LOOKUP_SYSTEM | ProfileFlags::DENY_BY_PATH | ProfileFlags::ASSUME_EXISTENCE,
     )
     .unwrap()

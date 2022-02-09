@@ -24,7 +24,6 @@ use crate::{
     utils::input,
     USER_PROFILE_DIR,
 };
-use clap::ArgMatches;
 use lazy_static::lazy_static;
 use log::{debug, error, info, warn};
 use std::fs::{create_dir, rename};
@@ -38,12 +37,12 @@ lazy_static! {
     };
 }
 
-pub fn start(cli: &ArgMatches<'_>) {
+pub fn start(cli: &crate::cli::CliDisable) {
     debug!("subcommand: disable");
 
-    if cli.is_present("user") {
+    if cli.user {
         disable_user();
-    } else if cli.is_present("list") {
+    } else if cli.list {
         list().unwrap_or_else(|e| error!("An error occured while listing: {}", e));
     } else {
         match create_dir(&*DISABLED_DIR) {
@@ -51,9 +50,8 @@ pub fn start(cli: &ArgMatches<'_>) {
             Err(err) if err.kind() == std::io::ErrorKind::AlreadyExists => (),
             Err(err) => fatal!("Failed to create the disabled dir: {}", err),
         }
-        let profile_name = cli.value_of("PROFILE_NAME").unwrap();
         let profile = Profile::new(
-            profile_name,
+            cli.profile_name.as_deref().unwrap(),
             ProfileFlags::LOOKUP_USER | ProfileFlags::DENY_BY_PATH,
         )
         .unwrap();

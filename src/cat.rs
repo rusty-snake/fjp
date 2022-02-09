@@ -19,7 +19,6 @@
 
 use crate::profile::{Profile, ProfileFlags};
 use crate::{fatal, utils::ColoredText};
-use clap::ArgMatches;
 use log::{debug, error, warn};
 use nix::sys::signal::{kill, Signal::SIGTERM};
 use nix::unistd::Pid;
@@ -34,10 +33,10 @@ struct Options {
     show_redirects: bool,
 }
 
-pub fn start(cli: &ArgMatches<'_>) {
+pub fn start(cli: &crate::cli::CliCat) {
     debug!("subcommand: cat");
 
-    let cmd: &[&str] = if cli.is_present("no-pager") {
+    let cmd: &[&str] = if cli.no_pager {
         &["cat"]
     } else {
         &["less", "-R"]
@@ -58,10 +57,10 @@ pub fn start(cli: &ArgMatches<'_>) {
         );
 
     let opts = Options {
-        show_locals: !cli.is_present("no-locals"),
-        show_redirects: !cli.is_present("no-redirects"),
+        show_locals: !cli.no_locals,
+        show_redirects: !cli.no_redirects,
     };
-    let name = cli.value_of("PROFILE_NAME").unwrap();
+    let name = &cli.profile_name;
     let profile_flags = ProfileFlags::default().with(ProfileFlags::READ);
 
     match Profile::new(name, profile_flags) {

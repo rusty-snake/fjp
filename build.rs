@@ -17,12 +17,15 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-use clap::{crate_description, crate_version, load_yaml, App, Shell};
+use clap::IntoApp;
+use clap_complete::{generate, generate_to, Shell};
 use std::env::var_os;
 use std::fs::{create_dir_all, File};
 use std::io::BufWriter;
 use std::io::Write;
 use std::path::Path;
+
+include!("src/cli.rs");
 
 const BIN_NAME: &str = "fjp";
 const ZCOMP_HEADER: &str = r#"
@@ -67,16 +70,13 @@ fn main() {
 
     create_dir_all(&out_dir).unwrap();
 
-    let yaml = load_yaml!("src/cli.yaml");
-    let mut app = App::from_yaml(yaml)
-        .about(crate_description!())
-        .version(crate_version!());
+    let mut app = Cli::into_app();
 
-    app.gen_completions(BIN_NAME, Shell::Bash, &out_dir);
-    app.gen_completions(BIN_NAME, Shell::Fish, &out_dir);
+    generate_to(Shell::Bash, &mut app, BIN_NAME, &out_dir).expect("generate_to bash");
+    generate_to(Shell::Fish, &mut app, BIN_NAME, &out_dir).expect("generate_to fish");
 
     let mut buf = Vec::new();
-    app.gen_completions_to(BIN_NAME, Shell::Zsh, &mut buf);
+    generate(Shell::Zsh, &mut app, BIN_NAME, &mut buf);
     let rzcomp = match String::from_utf8(buf) {
         Ok(comp) => comp,
         Err(err) => {

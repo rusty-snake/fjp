@@ -8,7 +8,7 @@ sources = [
   '../macros/Cargo.toml',
   '../macros/src/lib.rs',
   'cat.rs',
-  'cli.yaml',
+  'cli.rs',
   'diff.rs',
   'disable.rs',
   'edit.rs',

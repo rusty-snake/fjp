@@ -18,15 +18,13 @@
  */
 
 use crate::profile::{Profile, ProfileFlags};
-use clap::ArgMatches;
 use log::{debug, error, trace};
 use std::fs::remove_file;
 
-pub fn start(cli: &ArgMatches<'_>) {
+pub fn start(cli: &crate::cli::CliRm) {
     debug!("subcommand: rm");
 
-    let profiles = cli.values_of("PROFILE_NAMES").unwrap();
-    for profile in profiles {
+    for profile in &cli.profile_names {
         let profile = Profile::new(
             profile,
             ProfileFlags::LOOKUP_USER | ProfileFlags::DENY_BY_PATH | ProfileFlags::ASSUME_EXISTENCE,

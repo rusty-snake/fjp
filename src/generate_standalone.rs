@@ -23,7 +23,6 @@ use crate::{
 };
 use anyhow::{anyhow, ensure};
 use bitflags::bitflags;
-use clap::ArgMatches;
 use log::debug;
 use std::error::Error as StdError;
 use std::fs::File;
@@ -59,19 +58,19 @@ macro_rules! write_lined {
     };
 }
 
-pub fn start(cli: &ArgMatches<'_>) {
+pub fn start(cli: &crate::cli::CliGenerateStandalone) {
     debug!("subcommand: generate-standalone");
 
     let mut flags = Flags::empty();
-    if cli.is_present("keep-incs") {
+    if cli.keep_inc {
         flags.insert(Flags::KEEP_INCS);
     }
-    if cli.is_present("keep-locals") {
+    if cli.keep_locals {
         flags.insert(Flags::KEEP_LOCALS);
     }
 
     let mut output: BufWriter<Box<dyn IoWrite>> =
-        BufWriter::new(cli.value_of("output").map_or_else(
+        BufWriter::new(cli.output_file.as_deref().map_or_else(
             || Box::new(stdout()) as Box<dyn IoWrite>,
             |file_name| {
                 Box::new(
@@ -82,7 +81,7 @@ pub fn start(cli: &ArgMatches<'_>) {
         ));
 
     let profile = Profile::new(
-        cli.value_of("PROFILE_NAME").unwrap(),
+        &cli.profile_name,
         ProfileFlags::default().with(ProfileFlags::READ),
     )
     .unwrap_or_else(|err| {

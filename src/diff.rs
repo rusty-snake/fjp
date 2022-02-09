@@ -17,26 +17,29 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
+use crate::cli::CliDiffFormat;
 use crate::fatal;
 use crate::profile::{Profile, ProfileFlags};
 use crate::profile_stream::ProfileStream;
 use crate::utils::ColoredText;
-use clap::ArgMatches;
 use termcolor::Color;
 
-pub fn start(cli: &ArgMatches<'_>) {
+pub fn start(cli: &crate::cli::CliDiff) {
     let [(profile1, profile1_stream), (profile2, profile2_stream)] = read_and_parse(cli);
 
-    match cli.value_of("format") {
-        Some("color") => format_color(&profile1, &profile2, &profile1_stream, &profile2_stream),
-        Some("simple") => format_simple(&profile1, &profile2, &profile1_stream, &profile2_stream),
-        _ => unreachable!(),
+    match cli.format {
+        CliDiffFormat::Color => {
+            format_color(&profile1, &profile2, &profile1_stream, &profile2_stream);
+        }
+        CliDiffFormat::Simple => {
+            format_simple(&profile1, &profile2, &profile1_stream, &profile2_stream);
+        }
     }
 }
 
-fn read_and_parse<'a>(cli: &'a ArgMatches<'a>) -> [(Profile<'a>, ProfileStream); 2] {
-    let profile1_name = cli.value_of("PROFILE_NAME1").unwrap();
-    let profile2_name = cli.value_of("PROFILE_NAME2").unwrap();
+fn read_and_parse(cli: &crate::cli::CliDiff) -> [(Profile<'_>, ProfileStream); 2] {
+    let profile1_name = &cli.profile_name1;
+    let profile2_name = &cli.profile_name2;
 
     let profile1 = Profile::new(
         profile1_name,

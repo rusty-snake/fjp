@@ -23,19 +23,17 @@ use crate::{
     utils::input,
     USER_PROFILE_DIR,
 };
-use clap::ArgMatches;
 use log::{debug, error, info, warn};
 use std::fs::rename;
 
-pub fn start(cli: &ArgMatches<'_>) {
+pub fn start(cli: &crate::cli::CliEnable) {
     debug!("subcommand: enable");
 
-    if cli.is_present("user") {
+    if cli.user {
         enable_user();
     } else {
-        let profile_name = cli.value_of("PROFILE_NAME").unwrap();
         let profile = Profile::new(
-            profile_name,
+            cli.profile_name.as_deref().unwrap(),
             ProfileFlags::LOOKUP_USER | ProfileFlags::ASSUME_EXISTENCE | ProfileFlags::DENY_BY_PATH,
         )
         .unwrap();

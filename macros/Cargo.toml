@@ -1,6 +1,6 @@
 [package]
 name = "macros"
-version = "0.3.0"
+version = "0.4.0-dev"
 description = "Procedural Macros for fjp"
 authors = ["rusty-snake"]
 edition = "2018"

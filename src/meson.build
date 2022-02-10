@@ -24,9 +24,11 @@ sources = [
   'utils.rs',
 ]
 
-cargo = find_program('cargo', fs.expanduser('~/.cargo/bin/cargo'))
-cargo_version = run_command(cargo, '-V', check: true).stdout().split()[1]
-assert(cargo_version.version_compare('>=1.56'))
+cargo = find_program(
+  'cargo',
+  fs.expanduser('~/.cargo/bin/cargo'),
+  version: '>=1.56',
+)
 
 cargo_build_cmd = [
   cargo,

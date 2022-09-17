@@ -27,7 +27,7 @@ sources = [
 cargo = find_program(
   'cargo',
   fs.expanduser('~/.cargo/bin/cargo'),
-  version: '>=1.56',
+  version: '>=1.57',
 )
 
 cargo_build_cmd = [

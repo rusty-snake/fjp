@@ -211,7 +211,7 @@ impl FromStr for ProfileStream {
 //
 
 /// A profile-line
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Line {
     /// The line number of this line if known
     pub lineno: Option<usize>,
@@ -242,7 +242,7 @@ impl AsRef<Content> for Line {
 //
 
 /// The content of a profile-`Line`
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub enum Content {
     Blank,
     Command(Command),

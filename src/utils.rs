@@ -53,6 +53,7 @@ pub fn input(prompt: &str) -> io::Result<String> {
     Ok(buf.trim().to_string())
 }
 
+#[allow(clippy::crate_in_macro_def)]
 #[macro_export]
 macro_rules! profile_path {
     (USER/$name:expr) => {{

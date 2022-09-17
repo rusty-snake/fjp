@@ -863,7 +863,7 @@ seccomp_error_action! {
 //
 
 #[non_exhaustive]
-#[derive(Clone, Debug, thiserror::Error, PartialEq)]
+#[derive(Clone, Debug, thiserror::Error, PartialEq, Eq)]
 pub enum Error {
     #[error("Invalid bind command")]
     BadBind,

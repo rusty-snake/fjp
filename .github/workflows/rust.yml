@@ -22,6 +22,9 @@ on:
       - Cargo.toml
       - build.rs
 
+permissions:
+  contents: read
+
 env:
     CARGO_TERM_COLOR: always
 

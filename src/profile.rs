@@ -198,7 +198,7 @@ impl<'a> Profile<'a> {
                 path = None;
             }
         } else {
-            path = lookup_profile(&*full_name, flags);
+            path = lookup_profile(&full_name, flags);
         }
 
         if !flags.contains(ProfileFlags::ASSUME_EXISTENCE) {

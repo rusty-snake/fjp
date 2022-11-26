@@ -116,7 +116,7 @@ fn prepare_edit(user_profile: &Path, system_profile: &Path, flags: Flags) {
             system_profile.display(),
             user_profile.display(),
         );
-        copy_file(&system_profile, &user_profile).unwrap_or_else(|err| {
+        copy_file(system_profile, user_profile).unwrap_or_else(|err| {
             fatal!(
                 "Failed to copy '{}' to '{}': {}",
                 system_profile.display(),

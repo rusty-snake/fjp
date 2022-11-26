@@ -76,6 +76,6 @@ fn enable_profile(profile: &Profile<'_>) {
         disabled_profile.display(),
         enabled_profile.display()
     );
-    rename(&disabled_profile, &enabled_profile)
+    rename(&disabled_profile, enabled_profile)
         .unwrap_or_else(|err| error!("Rename failed: {}", err));
 }

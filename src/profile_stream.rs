@@ -233,7 +233,7 @@ impl Line {
 }
 impl AsRef<Content> for Line {
     fn as_ref(&self) -> &Content {
-        &*self.content
+        &self.content
     }
 }
 

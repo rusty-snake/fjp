@@ -104,5 +104,5 @@ fn disable_profile(profile: &Profile<'_>) {
         enabled_profile.display(),
         disabled_profile.display()
     );
-    rename(&enabled_profile, &disabled_profile).unwrap_or_else(|e| error!("Rename failed: {}", e));
+    rename(enabled_profile, &disabled_profile).unwrap_or_else(|e| error!("Rename failed: {}", e));
 }

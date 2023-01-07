@@ -1,3 +1,8 @@
+> **Warning**: This project is unmaintained, I will not work on it anymore. For [questions](https://github.com/rusty-snake/fjp/discussions) I will still be there.
+
+> **Warning**: There are known bugs that cause data loss ([#67](https://github.com/rusty-snake/fjp/issues/67)). Do not use.
+
+
 fjp – firejail-profile
 ======================
 
